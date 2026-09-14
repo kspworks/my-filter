@@ -168,16 +168,23 @@ export function ConsumableRow({
         </div>
         {/*
           One message rather than JSX fragments around the values: the clause
-          order is not the same in every language.
+          order is not the same in every language. `count` goes along with the
+          rendered interval because the word in front of it declines with the
+          number in Ukrainian.
         */}
         <p className="mt-0.5 text-sm text-muted-foreground">
           {showSystem && consumable.systemManufacturer
             ? t("summaryWithSystem", {
+                count: consumable.intervalValue,
                 interval,
                 date: lastChanged,
                 system: `${consumable.systemManufacturer} ${consumable.systemModel}`,
               })
-            : t("summary", { interval, date: lastChanged })}
+            : t("summary", {
+                count: consumable.intervalValue,
+                interval,
+                date: lastChanged,
+              })}
         </p>
       </div>
 

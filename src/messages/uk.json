@@ -110,8 +110,8 @@
     "unassignedHeading": "Без системи ({count})",
     "noneAttached": "Жодного картриджа ще не прив’язано до системи.",
     "noneUnassigned": "На полиці порожньо. Від’єднані картриджі з’являться тут.",
-    "summary": "Кожні {interval} · остання заміна {date}",
-    "summaryWithSystem": "Кожні {interval} · остання заміна {date} · {system}",
+    "summary": "{count, plural, one {Кожен {interval}} other {Кожні {interval}}} · остання заміна {date}",
+    "summaryWithSystem": "{count, plural, one {Кожен {interval}} other {Кожні {interval}}} · остання заміна {date} · {system}",
     "markReplaced": "Позначити заміну",
     "replaceOnAnotherDate": "Вказати іншу дату заміни",
     "replacedOn": "Дата заміни",
@@ -128,7 +128,7 @@
       "name": "Назва",
       "namePlaceholder": "Механічний PP 5 мікрон",
       "type": "Тип",
-      "replaceEvery": "Замінювати кожні",
+      "intervalLegend": "Інтервал заміни",
       "intervalValue": "Значення інтервалу",
       "intervalUnit": "Одиниця інтервалу",
       "lastChangedOn": "Встановлено / остання заміна",
@@ -157,7 +157,7 @@
     "dialogDescription": "Відправна точка для поширених систем осмосу. Усе створене можна потім відредагувати.",
     "installedOn": "Встановлено / остання заміна",
     "apply": "Додати набір",
-    "itemSummary": "{name} — кожні {interval}",
+    "itemSummary": "{name} — {count, plural, one {кожен {interval}} other {кожні {interval}}}",
     "added": "{count, plural, one {Додано # картридж.} few {Додано # картриджі.} many {Додано # картриджів.} other {Додано # картриджів.}}",
     "sets": {
       "ro_5_stage": {

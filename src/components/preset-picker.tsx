@@ -88,6 +88,7 @@ export function PresetPicker({
                   <li key={item.nameKey}>
                     {t("itemSummary", {
                       name: t(`items.${item.nameKey}`),
+                      count: item.intervalValue,
                       interval: labels.interval(
                         item.intervalValue,
                         item.intervalUnit,

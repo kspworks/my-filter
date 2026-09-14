@@ -177,7 +177,7 @@ export function ConsumableFormDialog({
 
             <fieldset className="grid gap-2">
               <legend className="mb-2 text-sm font-medium">
-                {t("form.replaceEvery")}
+                {t("form.intervalLegend")}
               </legend>
               <div className="flex gap-2">
                 <Input

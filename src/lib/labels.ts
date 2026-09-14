@@ -12,6 +12,10 @@ import type { DueStatus } from "~/lib/due-date";
  * `interval` is a message rather than string concatenation because the plural
  * category is language-specific: English has two forms, Ukrainian four, and its
  * "one" category includes 21, 31 and 101.
+ *
+ * Pass that same count to whatever message the phrase is interpolated into. In
+ * Ukrainian the determiner agrees with it too — «Кожен 1 місяць» but «Кожні 3
+ * місяці» — so the wrapper has to make the same plural choice this does.
  */
 export function useLabels() {
   const t = useTranslations();

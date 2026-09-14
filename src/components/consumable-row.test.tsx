@@ -148,3 +148,55 @@ describe("marking a cartridge replaced", () => {
     expect(await screen.findByText(/not found/i)).toBeInTheDocument();
   });
 });
+
+/**
+ * The word in front of the count declines with it in Ukrainian — «Кожен 1
+ * місяць» but «Кожні 6 місяців» — so the row has to hand the count to the
+ * summary message and not only to the interval phrase inside it. English
+ * cannot catch a regression here: "every" is "every" either way.
+ */
+describe("in Ukrainian", () => {
+  let uk: TestApp;
+
+  beforeEach(async () => {
+    uk = await setupApp({ locale: "uk" });
+  });
+
+  afterEach(() => uk.close());
+
+  async function aUkrainianRow(intervalValue: number) {
+    await uk.caller.consumables.create({
+      type: "post_carbon",
+      name: "Пост-вугільний",
+      intervalValue,
+      intervalUnit: "months",
+      lastChangedOn: "2026-01-10",
+    });
+
+    const [consumable] = await uk.caller.consumables.list();
+    if (!consumable) throw new Error("fixture did not create a consumable");
+
+    uk.render(
+      <ConsumableRow
+        consumable={consumable}
+        today={TODAY}
+        systems={[]}
+        showSystem={false}
+      />,
+    );
+  }
+
+  // Only the determiner and the count are asserted: the date half is
+  // `useFormatDate()`'s Intl output and is not what this test is about.
+  it("agrees «кожен» with an interval of one", async () => {
+    await aUkrainianRow(1);
+
+    expect(await screen.findByText(/^Кожен 1 місяць ·/)).toBeInTheDocument();
+  });
+
+  it("uses «кожні» for every other category", async () => {
+    await aUkrainianRow(6);
+
+    expect(await screen.findByText(/^Кожні 6 місяців ·/)).toBeInTheDocument();
+  });
+});

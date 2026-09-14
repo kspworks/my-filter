@@ -123,6 +123,44 @@ describe("Ukrainian plural rules", () => {
     expect(t("duePhrase.upcoming", { count: 1 })).toBe("через 1 день");
   });
 
+  it("agrees the determiner with the interval count", async () => {
+    const t = await translator("uk");
+    const every = (count: number, unit: "days" | "months") =>
+      t("consumables.summary", {
+        count,
+        interval: t(`interval.${unit}`, { count }),
+        date: "10 січ. 2026",
+      });
+
+    expect(every(1, "months")).toBe(
+      "Кожен 1 місяць · остання заміна 10 січ. 2026",
+    );
+    expect(every(3, "months")).toBe(
+      "Кожні 3 місяці · остання заміна 10 січ. 2026",
+    );
+    expect(every(6, "months")).toBe(
+      "Кожні 6 місяців · остання заміна 10 січ. 2026",
+    );
+    // 21 is "one" in Ukrainian, so the determiner follows the noun back to
+    // the singular that «Кожні» would get wrong.
+    expect(every(21, "days")).toBe(
+      "Кожен 21 день · остання заміна 10 січ. 2026",
+    );
+  });
+
+  it("agrees the determiner in the preset list too", async () => {
+    const t = await translator("uk");
+    const item = (count: number) =>
+      t("presets.itemSummary", {
+        name: "Пост-вугільний",
+        count,
+        interval: t("interval.months", { count }),
+      });
+
+    expect(item(1)).toBe("Пост-вугільний — кожен 1 місяць");
+    expect(item(6)).toBe("Пост-вугільний — кожні 6 місяців");
+  });
+
   it("declines counted cartridges", async () => {
     const t = await translator("uk");
 

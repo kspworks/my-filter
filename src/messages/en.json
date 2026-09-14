@@ -128,7 +128,7 @@
       "name": "Name",
       "namePlaceholder": "Sediment PP 5 micron",
       "type": "Type",
-      "replaceEvery": "Replace every",
+      "intervalLegend": "Replacement interval",
       "intervalValue": "Interval value",
       "intervalUnit": "Interval unit",
       "lastChangedOn": "Installed / last changed",
