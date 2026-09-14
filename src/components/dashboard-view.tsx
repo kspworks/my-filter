@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { CircleAlert, CircleCheck, Clock, Plus } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ConsumableFormDialog } from "~/components/consumable-form-dialog";
 import {
@@ -14,6 +15,7 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import { compareByUrgency, type DueStatus, dueInfo } from "~/lib/due-date";
+import { useLabels } from "~/lib/labels";
 import { useTRPC } from "~/lib/trpc/client";
 import { useToday } from "~/lib/use-today";
 
@@ -21,12 +23,13 @@ const UNASSIGNED_KEY = "__unassigned__";
 
 type Group = {
   key: string;
-  title: string;
+  title: string | null;
   href: string | null;
   items: ConsumableListItem[];
   urgency: number;
 };
 
+/** `title` is null for the spare shelf — the caller translates that one. */
 function groupBySystem(items: ConsumableListItem[], today: string): Group[] {
   const groups = new Map<string, Group>();
 
@@ -39,7 +42,7 @@ function groupBySystem(items: ConsumableListItem[], today: string): Group[] {
         key,
         title: item.systemId
           ? `${item.systemManufacturer} ${item.systemModel}`
-          : "Unassigned",
+          : null,
         href: item.systemId ? `/systems/${item.systemId}` : "/consumables",
         items: [],
         urgency: Number.POSITIVE_INFINITY,
@@ -64,22 +67,21 @@ function groupBySystem(items: ConsumableListItem[], today: string): Group[] {
   });
 }
 
+// The label comes from `useLabels` rather than being repeated here, so the
+// tiles and the due badges can never drift apart.
 const TILES = [
   {
     status: "overdue" as DueStatus,
-    label: "Overdue",
     icon: CircleAlert,
     className: "text-destructive",
   },
   {
     status: "due_soon" as DueStatus,
-    label: "Due soon",
     icon: Clock,
     className: "text-amber-600 dark:text-amber-400",
   },
   {
     status: "ok" as DueStatus,
-    label: "On schedule",
     icon: CircleCheck,
     className: "text-emerald-600 dark:text-emerald-400",
   },
@@ -87,6 +89,11 @@ const TILES = [
 
 export function DashboardView() {
   const trpc = useTRPC();
+  const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
+  const tSystems = useTranslations("systems");
+  const tConsumables = useTranslations("consumables");
+  const labels = useLabels();
   const today = useToday();
   const [addingSystem, setAddingSystem] = useState(false);
   const [addingConsumable, setAddingConsumable] = useState(false);
@@ -111,22 +118,22 @@ export function DashboardView() {
     <div className="grid gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">
-            What needs replacing, most urgent first.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            {t("title")}
+          </h1>
+          <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setAddingSystem(true)}>
             <Plus aria-hidden />
-            Add system
+            {tSystems("add")}
           </Button>
           <Button
             onClick={() => setAddingConsumable(true)}
             disabled={systems.length === 0}
           >
             <Plus aria-hidden />
-            Add consumable
+            {tConsumables("add")}
           </Button>
         </div>
       </div>
@@ -137,7 +144,7 @@ export function DashboardView() {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                 <tile.icon className={`size-4 ${tile.className}`} aria-hidden />
-                {tile.label}
+                {labels.dueStatus(tile.status)}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -157,14 +164,13 @@ export function DashboardView() {
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="font-medium">Nothing tracked yet</p>
+            <p className="font-medium">{t("emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Add a water filter system, then apply a preset cartridge set or
-              add consumables one by one.
+              {t("emptyBody")}
             </p>
             <Button className="mt-4" onClick={() => setAddingSystem(true)}>
               <Plus aria-hidden />
-              Add your first system
+              {t("emptyAction")}
             </Button>
           </CardContent>
         </Card>
@@ -175,15 +181,14 @@ export function DashboardView() {
               <CardTitle className="text-base">
                 {group.href ? (
                   <Link href={group.href} className="hover:underline">
-                    {group.title}
+                    {group.title ?? t("unassigned")}
                   </Link>
                 ) : (
-                  group.title
+                  (group.title ?? t("unassigned"))
                 )}
               </CardTitle>
               <span className="text-sm text-muted-foreground">
-                {group.items.length}{" "}
-                {group.items.length === 1 ? "item" : "items"}
+                {tCommon("itemCount", { count: group.items.length })}
               </span>
             </CardHeader>
             <CardContent className="divide-y divide-border p-0">

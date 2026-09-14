@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
@@ -15,8 +16,9 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { formatInterval } from "~/lib/labels";
+import { useLabels } from "~/lib/labels";
 import { useTRPC } from "~/lib/trpc/client";
+import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
 import { cn } from "~/lib/utils";
 
@@ -37,6 +39,10 @@ export function PresetPicker({
 }) {
   const trpc = useTRPC();
   const refresh = useRefreshData();
+  const t = useTranslations("presets");
+  const tCommon = useTranslations("common");
+  const labels = useLabels();
+  const onError = useErrorToast();
   const presetsQuery = useQuery(trpc.systems.presets.queryOptions());
   const [selected, setSelected] = useState<string | null>(null);
   const [lastChangedOn, setLastChangedOn] = useState(installedOn);
@@ -45,10 +51,10 @@ export function PresetPicker({
     trpc.systems.applyPreset.mutationOptions({
       onSuccess: async (result) => {
         await refresh();
-        toast.success(`Added ${result.created} consumables.`);
+        toast.success(t("added", { count: result.created }));
         onOpenChange(false);
       },
-      onError: (error) => toast.error(error.message),
+      onError,
     }),
   );
 
@@ -56,11 +62,8 @@ export function PresetPicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add a standard cartridge set</DialogTitle>
-          <DialogDescription>
-            A starting point for common osmosis units. Everything it creates is
-            editable afterwards.
-          </DialogDescription>
+          <DialogTitle>{t("dialogTitle")}</DialogTitle>
+          <DialogDescription>{t("dialogDescription")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 py-2">
@@ -76,15 +79,20 @@ export function PresetPicker({
                   : "border-border hover:bg-muted/50",
               )}
             >
-              <p className="font-medium">{preset.name}</p>
+              <p className="font-medium">{t(`sets.${preset.id}.name`)}</p>
               <p className="text-sm text-muted-foreground">
-                {preset.description}
+                {t(`sets.${preset.id}.description`)}
               </p>
               <ul className="mt-2 grid gap-0.5 text-xs text-muted-foreground">
                 {preset.items.map((item) => (
-                  <li key={item.name}>
-                    {item.name} — every{" "}
-                    {formatInterval(item.intervalValue, item.intervalUnit)}
+                  <li key={item.nameKey}>
+                    {t("itemSummary", {
+                      name: t(`items.${item.nameKey}`),
+                      interval: labels.interval(
+                        item.intervalValue,
+                        item.intervalUnit,
+                      ),
+                    })}
                   </li>
                 ))}
               </ul>
@@ -92,7 +100,7 @@ export function PresetPicker({
           ))}
 
           <div className="grid gap-2">
-            <Label htmlFor="preset-date">Installed / last changed</Label>
+            <Label htmlFor="preset-date">{t("installedOn")}</Label>
             <Input
               id="preset-date"
               type="date"
@@ -104,7 +112,7 @@ export function PresetPicker({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {tCommon("cancel")}
           </Button>
           <Button
             disabled={!selected || applyMutation.isPending}
@@ -118,7 +126,7 @@ export function PresetPicker({
             }
           >
             <Sparkles aria-hidden />
-            Add set
+            {t("apply")}
           </Button>
         </DialogFooter>
       </DialogContent>

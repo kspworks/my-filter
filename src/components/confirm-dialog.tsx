@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import {
   AlertDialog,
@@ -17,7 +18,7 @@ export function ConfirmDialog({
   onOpenChange,
   title,
   description,
-  confirmLabel = "Delete",
+  confirmLabel,
   onConfirm,
   pending,
 }: {
@@ -25,10 +26,13 @@ export function ConfirmDialog({
   onOpenChange: (open: boolean) => void;
   title: string;
   description: ReactNode;
+  /** Defaults to the translated "Delete". */
   confirmLabel?: string;
   onConfirm: () => void;
   pending?: boolean;
 }) {
+  const t = useTranslations("common");
+
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
@@ -37,7 +41,7 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction
             disabled={pending}
             onClick={(event) => {
@@ -45,7 +49,7 @@ export function ConfirmDialog({
               onConfirm();
             }}
           >
-            {confirmLabel}
+            {confirmLabel ?? t("delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

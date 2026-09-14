@@ -1,0 +1,226 @@
+{
+  "app": {
+    "name": "My Filter",
+    "description": "Track the cartridges in your water filter systems and when they are due for replacement."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "systems": "Systems",
+    "consumables": "Consumables",
+    "signOut": "Sign out"
+  },
+  "settings": {
+    "theme": {
+      "label": "Change theme",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "language": {
+      "label": "Change language",
+      "en": "English",
+      "uk": "Українська"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveChanges": "Save changes",
+    "edit": "Edit",
+    "delete": "Delete",
+    "close": "Close",
+    "cannotBeUndone": "This cannot be undone.",
+    "notes": "Notes",
+    "itemCount": "{count, plural, one {# item} other {# items}}",
+    "consumableCount": "{count, plural, one {# consumable} other {# consumables}}"
+  },
+  "consumableType": {
+    "sediment": "Sediment (PP)",
+    "carbon_gac": "Granular carbon (GAC)",
+    "carbon_block": "Carbon block (CTO)",
+    "membrane": "RO membrane",
+    "mineralizer": "Mineralizer",
+    "post_carbon": "Post carbon",
+    "other": "Other"
+  },
+  "intervalUnit": {
+    "days": "days",
+    "months": "months"
+  },
+  "interval": {
+    "days": "{count, plural, one {# day} other {# days}}",
+    "months": "{count, plural, one {# month} other {# months}}"
+  },
+  "dueStatus": {
+    "overdue": "Overdue",
+    "due_soon": "Due soon",
+    "ok": "On schedule"
+  },
+  "duePhrase": {
+    "today": "due today",
+    "overdue": "{count, plural, one {# day overdue} other {# days overdue}}",
+    "upcoming": "{count, plural, one {in # day} other {in # days}}"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "What needs replacing, most urgent first.",
+    "unassigned": "Unassigned",
+    "emptyTitle": "Nothing tracked yet",
+    "emptyBody": "Add a water filter system, then apply a preset cartridge set or add consumables one by one.",
+    "emptyAction": "Add your first system"
+  },
+  "systems": {
+    "title": "Systems",
+    "subtitle": "Your water filter units and the cartridges attached to them.",
+    "add": "Add system",
+    "emptyTitle": "No systems yet",
+    "emptyBody": "Add the osmosis unit under your sink to start tracking it.",
+    "installedOn": "Installed {date}",
+    "notFound": "System not found",
+    "backToSystems": "Back to systems",
+    "deleteLabel": "Delete system",
+    "addStandardSet": "Add standard set",
+    "consumablesHeading": "Consumables ({count})",
+    "noCartridges": "No cartridges tracked for this system yet. “Add standard set” fills in a typical osmosis stack in one step.",
+    "deleteTitle": "Delete «{name}»?",
+    "deleteBody": "{count, plural, one {Its # consumable will be kept and moved to Unassigned, along with its history.} other {Its # consumables will be kept and moved to Unassigned, along with their history.}}",
+    "form": {
+      "addTitle": "Add system",
+      "editTitle": "Edit system",
+      "description": "Where the cartridges live. Manufacturer and model make it easy to find the right replacements later.",
+      "manufacturer": "Manufacturer",
+      "manufacturerPlaceholder": "Aquafilter",
+      "model": "Model",
+      "modelPlaceholder": "RO-6 Standard",
+      "installedOn": "Installation date",
+      "notesPlaceholder": "Under the kitchen sink"
+    },
+    "toast": {
+      "added": "System added.",
+      "updated": "System updated.",
+      "deleted": "System deleted. Its consumables are now unassigned."
+    }
+  },
+  "consumables": {
+    "title": "Consumables",
+    "subtitle": "Every cartridge you own, attached or on the shelf.",
+    "add": "Add consumable",
+    "attachedHeading": "Attached ({count})",
+    "unassignedHeading": "Unassigned ({count})",
+    "noneAttached": "Nothing attached to a system yet.",
+    "noneUnassigned": "Nothing on the shelf. Detached items show up here.",
+    "summary": "Every {interval} · last changed {date}",
+    "summaryWithSystem": "Every {interval} · last changed {date} · {system}",
+    "markReplaced": "Mark replaced",
+    "replaceOnAnotherDate": "Replace on another date",
+    "replacedOn": "Replaced on",
+    "moreActions": "More actions",
+    "history": "History",
+    "attachment": "Attachment",
+    "detach": "Detach",
+    "deleteTitle": "Delete «{name}»?",
+    "deleteBody": "Its replacement history will be deleted too. This cannot be undone.",
+    "form": {
+      "addTitle": "Add consumable",
+      "editTitle": "Edit consumable",
+      "description": "The service interval drives the next due date. Change it any time — the schedule recalculates from the last replacement.",
+      "name": "Name",
+      "namePlaceholder": "Sediment PP 5 micron",
+      "type": "Type",
+      "replaceEvery": "Replace every",
+      "intervalValue": "Interval value",
+      "intervalUnit": "Interval unit",
+      "lastChangedOn": "Installed / last changed",
+      "system": "System",
+      "unassignedOption": "Unassigned (spare)"
+    },
+    "toast": {
+      "added": "Consumable added.",
+      "updated": "Consumable updated.",
+      "deleted": "Consumable deleted.",
+      "attached": "Attached.",
+      "detached": "Detached. The item is now unassigned.",
+      "replaced": "«{name}» replaced on {date}.",
+      "reverted": "Reverted to the previous replacement date.",
+      "undo": "Undo"
+    }
+  },
+  "historyDialog": {
+    "title": "Service history",
+    "installed": "Installed",
+    "mostRecent": "Most recent",
+    "replaced": "Replaced"
+  },
+  "presets": {
+    "dialogTitle": "Add a standard cartridge set",
+    "dialogDescription": "A starting point for common osmosis units. Everything it creates is editable afterwards.",
+    "installedOn": "Installed / last changed",
+    "apply": "Add set",
+    "itemSummary": "{name} — every {interval}",
+    "added": "{count, plural, one {Added # consumable.} other {Added # consumables.}}",
+    "sets": {
+      "ro_5_stage": {
+        "name": "Classic 5-stage RO",
+        "description": "Sediment, two carbons, membrane and a post carbon polisher."
+      },
+      "ro_6_stage_mineralizer": {
+        "name": "6-stage RO with mineralizer",
+        "description": "The classic five stages plus a remineralizing cartridge."
+      },
+      "prefilter_3_stage": {
+        "name": "3-stage pre-filter block",
+        "description": "Sediment and carbon pre-filters only, no membrane."
+      }
+    },
+    "items": {
+      "sediment_pp_5": "Sediment PP 5 micron",
+      "carbon_gac": "Granular activated carbon",
+      "carbon_block_cto": "Carbon block CTO",
+      "ro_membrane_50gpd": "RO membrane 50 GPD",
+      "post_carbon_inline": "Inline post carbon",
+      "mineralizer": "Mineralizer"
+    }
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "signInDescription": "Welcome back. Enter your email and password.",
+    "createAccount": "Create account",
+    "creatingAccount": "Creating account…",
+    "createAccountDescription": "Start tracking your filter replacements.",
+    "username": "Username",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "{count, plural, one {At least # character.} other {At least # characters.}}",
+    "passwordTooShort": "{count, plural, one {Password must be at least # character.} other {Password must be at least # characters.}}",
+    "noAccount": "No account yet?",
+    "createOne": "Create one",
+    "alreadyRegistered": "Already registered?",
+    "errors": {
+      "signInFailed": "Could not sign in.",
+      "signUpFailed": "Could not create the account.",
+      "INVALID_EMAIL_OR_PASSWORD": "Wrong email or password.",
+      "USER_ALREADY_EXISTS": "An account with this email already exists.",
+      "INVALID_EMAIL": "That email address is not valid.",
+      "PASSWORD_TOO_SHORT": "That password is too short.",
+      "PASSWORD_TOO_LONG": "That password is too long."
+    }
+  },
+  "pageTitles": {
+    "dashboard": "My Filter",
+    "systems": "Systems · My Filter",
+    "systemDetail": "System · My Filter",
+    "consumables": "Consumables · My Filter",
+    "signIn": "Sign in · My Filter",
+    "register": "Create account · My Filter"
+  },
+  "errors": {
+    "systemNotFound": "System not found",
+    "consumableNotFound": "Consumable not found",
+    "unknownPreset": "Unknown preset",
+    "installEntryProtected": "The original installation entry cannot be removed",
+    "generic": "Something went wrong. Please try again.",
+    "invalidInput": "Please check the values in the form and try again.",
+    "unauthorized": "Your session has expired. Please sign in again."
+  }
+}

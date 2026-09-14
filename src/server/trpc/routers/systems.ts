@@ -53,7 +53,10 @@ export const systemsRouter = router({
         .where(and(eq(systems.id, input.id), eq(systems.userId, ctx.user.id)));
 
       if (!system) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "System not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: ctx.t("errors.systemNotFound"),
+        });
       }
       return system;
     }),
@@ -93,7 +96,10 @@ export const systemsRouter = router({
         .returning(systemColumns);
 
       if (!updated) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "System not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: ctx.t("errors.systemNotFound"),
+        });
       }
       return updated;
     }),
@@ -111,7 +117,10 @@ export const systemsRouter = router({
         .returning({ id: systems.id });
 
       if (!deleted) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "System not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: ctx.t("errors.systemNotFound"),
+        });
       }
       return deleted;
     }),
@@ -129,7 +138,10 @@ export const systemsRouter = router({
     .mutation(async ({ ctx, input }) => {
       const preset = findPreset(input.presetId);
       if (!preset) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "Unknown preset" });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: ctx.t("errors.unknownPreset"),
+        });
       }
 
       const [system] = await ctx.db
@@ -140,7 +152,10 @@ export const systemsRouter = router({
         );
 
       if (!system) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "System not found" });
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: ctx.t("errors.systemNotFound"),
+        });
       }
 
       const lastChangedOn = input.lastChangedOn ?? system.installedOn;
@@ -153,7 +168,10 @@ export const systemsRouter = router({
               userId: ctx.user.id,
               systemId: system.id,
               type: item.type,
-              name: item.name,
+              // Resolved in the caller's language at creation time. From here
+              // on it is ordinary user data they can rename freely, so it is
+              // deliberately not re-translated later.
+              name: ctx.t(`presets.items.${item.nameKey}`),
               intervalValue: item.intervalValue,
               intervalUnit: item.intervalUnit,
               lastChangedOn,
@@ -162,13 +180,14 @@ export const systemsRouter = router({
           .returning({ id: consumables.id });
 
         // The install counts as the first service event, so history is complete
-        // from the moment the consumable exists.
+        // from the moment the consumable exists. The entry carries no note —
+        // being the oldest row is what makes it the installation.
         await tx.insert(consumableReplacements).values(
           created.map((item) => ({
             consumableId: item.id,
             userId: ctx.user.id,
             changedOn: lastChangedOn,
-            note: "Installed",
+            note: null,
           })),
         );
 

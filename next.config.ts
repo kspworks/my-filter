@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 // Importing here makes a missing/invalid environment variable fail the build
 // rather than the first request that happens to touch the database.
@@ -11,4 +12,5 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@libsql/client", "libsql"],
 };
 
-export default nextConfig;
+// Picks up `src/i18n/request.ts` by convention.
+export default createNextIntlPlugin()(nextConfig);

@@ -4,20 +4,25 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Droplets, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { LanguageSwitcher } from "~/components/language-switcher";
+import { ThemeToggle } from "~/components/theme-toggle";
 import { Button } from "~/components/ui/button";
 import { signOut } from "~/lib/auth-client";
 import { cn } from "~/lib/utils";
 
 const LINKS = [
-  { href: "/", label: "Dashboard" },
-  { href: "/systems", label: "Systems" },
-  { href: "/consumables", label: "Consumables" },
+  { href: "/", key: "dashboard" },
+  { href: "/systems", key: "systems" },
+  { href: "/consumables", key: "consumables" },
 ] as const;
 
 export function AppNav({ userName }: { userName: string }) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("nav");
+  const tApp = useTranslations("app");
 
   async function handleSignOut() {
     await signOut();
@@ -32,7 +37,7 @@ export function AppNav({ userName }: { userName: string }) {
       <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-6 py-3">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <Droplets className="size-5 text-primary" aria-hidden />
-          My Filter
+          {tApp("name")}
         </Link>
 
         <nav className="flex items-center gap-1">
@@ -52,17 +57,19 @@ export function AppNav({ userName }: { userName: string }) {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {link.label}
+                {t(link.key)}
               </Link>
             );
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">{userName}</span>
+        <div className="ml-auto flex items-center gap-1">
+          <span className="mr-2 text-sm text-muted-foreground">{userName}</span>
+          <LanguageSwitcher />
+          <ThemeToggle />
           <Button variant="ghost" size="sm" onClick={handleSignOut}>
             <LogOut aria-hidden />
-            Sign out
+            {t("signOut")}
           </Button>
         </div>
       </div>

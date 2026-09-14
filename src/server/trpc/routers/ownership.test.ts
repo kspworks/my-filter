@@ -3,6 +3,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { drizzle } from "drizzle-orm/libsql";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeEach, describe, expect, it } from "vitest";
+import { createAppTranslator } from "~/i18n/translator";
 import * as schema from "~/server/db/schema";
 import type { TRPCContext } from "~/server/trpc/context";
 import { createCallerFactory } from "~/server/trpc/init";
@@ -17,14 +18,21 @@ import { appRouter } from "~/server/trpc/routers/_app";
 const createCaller = createCallerFactory(appRouter);
 
 let db: ReturnType<typeof drizzle<typeof schema>>;
+let t: TRPCContext["t"];
 let alice: string;
 let bob: string;
 
+/**
+ * A real English translator rather than a stub, so the assertions below still
+ * read against the text a user would actually be shown.
+ */
 function callerFor(userId: string) {
   return createCaller({
     db,
     session: null,
     user: { id: userId } as NonNullable<TRPCContext["user"]>,
+    locale: "en",
+    t,
   } as TRPCContext);
 }
 
@@ -42,6 +50,7 @@ async function createUser(name: string) {
 }
 
 beforeEach(async () => {
+  t = await createAppTranslator("en");
   const client = createClient({ url: ":memory:" });
   db = drizzle(client, { schema });
   await migrate(db, { migrationsFolder: "./drizzle" });

@@ -11,8 +11,8 @@ click**.
 ## Stack
 
 TypeScript · Next.js 16 (App Router) · tRPC 11 · Drizzle ORM over libSQL/SQLite ·
-better-auth · Zod · @t3-oss/env-nextjs · date-fns · Tailwind 4 + shadcn/ui ·
-lucide-react · Biome · Vitest
+better-auth · Zod · @t3-oss/env-nextjs · date-fns · next-intl · next-themes ·
+Tailwind 4 + shadcn/ui · lucide-react · Biome · Vitest
 
 ## Getting started
 
@@ -82,8 +82,30 @@ ephemeral), which is why the app talks to libSQL from the start. To deploy on Ve
 create a Turso database, set `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`
 and `BETTER_AUTH_URL`, and run `pnpm db:migrate` against the remote URL.
 
+## Language and theme
+
+English and Ukrainian, chosen from the header and remembered in a cookie. There is no
+`/uk/` URL prefix and no middleware: `src/i18n/request.ts` resolves the cookie, falling
+back to `Accept-Language` and then English, so a first-time Ukrainian visitor lands in
+Ukrainian without a redirect.
+
+Getting Ukrainian right is mostly about **plurals**. It has four categories where English
+has two, and the `one` category includes 21 and 101 — so "in 1 day / in 3 days" is
+*через 1 день / через 3 дні / через 5 днів / через 21 день*. Every count therefore goes
+through an ICU message rather than a `=== 1` check, and `src/i18n/messages.test.ts` asserts
+the forms at 1, 3, 5, 11, 21 and 22. The same test fails the build if the two catalogues
+drift apart or an ICU message stops compiling.
+
+Translating never touches stored data. Enum-like values were already stable keys, and the
+two places that *did* write English into the database have been fixed: applying a preset
+now creates cartridges named in the user's own language (ordinary, editable user data from
+then on), and the replacement log stores no label at all — whether an entry is the
+installation, the most recent, or a plain replacement follows from its position.
+
+The UI is **dark by default**, with a Light/Dark/System toggle beside the language picker.
+The theme is kept in `localStorage` and applied by a pre-paint script, so there is no
+flash and no cost to prerendering.
+
 ## Not in this iteration
 
-Email notifications, a mobile layout, and i18n. The schema and code are arranged so none
-of them need a migration: enum-like values are stored as stable keys and rendered through
-`src/lib/labels.ts`, and all date formatting goes through `src/lib/format-date.ts`.
+Email notifications and a mobile layout. Neither needs a migration to add.

@@ -1,6 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import { and, asc, desc, eq, isNull, max } from "drizzle-orm";
 import { z } from "zod";
+import type { AppTranslator } from "~/i18n/translator";
 import { CONSUMABLE_TYPES, INTERVAL_UNITS } from "~/lib/consumables";
 import type { DbOrTransaction, Transaction } from "~/server/db";
 import {
@@ -60,11 +61,17 @@ async function syncLastChanged(
     );
 }
 
-/** Throws unless the system exists AND belongs to the caller. */
+/**
+ * Throws unless the system exists AND belongs to the caller.
+ *
+ * Takes the translator rather than reaching for a request-scoped one: the
+ * message ends up in a toast, so it has to be in the caller's language.
+ */
 async function assertOwnsSystem(
   db: DbOrTransaction,
   systemId: string,
   userId: string,
+  t: AppTranslator,
 ) {
   const [system] = await db
     .select({ id: systems.id })
@@ -72,7 +79,10 @@ async function assertOwnsSystem(
     .where(and(eq(systems.id, systemId), eq(systems.userId, userId)));
 
   if (!system) {
-    throw new TRPCError({ code: "NOT_FOUND", message: "System not found" });
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: t("errors.systemNotFound"),
+    });
   }
 }
 
@@ -122,7 +132,7 @@ export const consumablesRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       if (input.systemId) {
-        await assertOwnsSystem(ctx.db, input.systemId, ctx.user.id);
+        await assertOwnsSystem(ctx.db, input.systemId, ctx.user.id, ctx.t);
       }
 
       return ctx.db.transaction(async (tx) => {
@@ -148,7 +158,9 @@ export const consumablesRouter = router({
           consumableId: created.id,
           userId: ctx.user.id,
           changedOn: input.lastChangedOn,
-          note: "Installed",
+          // The oldest entry *is* the installation; the UI derives that label
+          // from position, so no display text is stored here.
+          note: null,
         });
 
         return created;
@@ -178,7 +190,7 @@ export const consumablesRouter = router({
       if (!updated) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Consumable not found",
+          message: ctx.t("errors.consumableNotFound"),
         });
       }
       return updated;
@@ -200,7 +212,7 @@ export const consumablesRouter = router({
       if (!deleted) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Consumable not found",
+          message: ctx.t("errors.consumableNotFound"),
         });
       }
       return deleted;
@@ -211,7 +223,7 @@ export const consumablesRouter = router({
     .mutation(async ({ ctx, input }) => {
       // Checked separately: without this, a user could park their own consumable
       // on somebody else's system by guessing an id.
-      await assertOwnsSystem(ctx.db, input.systemId, ctx.user.id);
+      await assertOwnsSystem(ctx.db, input.systemId, ctx.user.id, ctx.t);
 
       const [updated] = await ctx.db
         .update(consumables)
@@ -227,7 +239,7 @@ export const consumablesRouter = router({
       if (!updated) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Consumable not found",
+          message: ctx.t("errors.consumableNotFound"),
         });
       }
       return updated;
@@ -250,7 +262,7 @@ export const consumablesRouter = router({
       if (!updated) {
         throw new TRPCError({
           code: "NOT_FOUND",
-          message: "Consumable not found",
+          message: ctx.t("errors.consumableNotFound"),
         });
       }
       return updated;
@@ -280,7 +292,7 @@ export const consumablesRouter = router({
         if (!owned) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Consumable not found",
+            message: ctx.t("errors.consumableNotFound"),
           });
         }
 
@@ -328,13 +340,13 @@ export const consumablesRouter = router({
         if (!newest) {
           throw new TRPCError({
             code: "NOT_FOUND",
-            message: "Consumable not found",
+            message: ctx.t("errors.consumableNotFound"),
           });
         }
         if (entries.length === 1) {
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: "The original installation entry cannot be removed",
+            message: ctx.t("errors.installEntryProtected"),
           });
         }
 

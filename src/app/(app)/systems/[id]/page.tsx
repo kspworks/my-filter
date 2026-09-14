@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { SystemDetailView } from "~/components/system-detail-view";
 
-export const metadata: Metadata = { title: "System · My Filter" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("pageTitles");
+  return { title: t("systemDetail") };
+}
 
 export default async function SystemPage({
   params,

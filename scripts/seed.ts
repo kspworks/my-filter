@@ -59,11 +59,14 @@ async function addConsumable(
 
   const history = [...(item.extraHistory ?? []), item.lastChangedOn];
   await db.insert(consumableReplacements).values(
-    history.map((changedOn, index) => ({
+    history.map((changedOn) => ({
       consumableId: created.id,
       userId,
       changedOn,
-      note: index === history.length - 1 ? "Most recent" : "Installed",
+      // Matches what the app writes: which entry is the installation and which
+      // is the most recent is derived from position when rendering, so no
+      // display text goes into the log.
+      note: null,
     })),
   );
 }

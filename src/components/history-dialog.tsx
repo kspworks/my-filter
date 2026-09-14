@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
-import { formatDate } from "~/lib/format-date";
+import { useFormatDate } from "~/lib/format-date";
 import { useTRPC } from "~/lib/trpc/client";
 
 export function HistoryDialog({
@@ -24,16 +25,20 @@ export function HistoryDialog({
   consumableName: string;
 }) {
   const trpc = useTRPC();
+  const t = useTranslations("historyDialog");
+  const formatDate = useFormatDate();
   const historyQuery = useQuery({
     ...trpc.consumables.history.queryOptions({ id: consumableId }),
     enabled: open,
   });
 
+  const entries = historyQuery.data ?? [];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Service history</DialogTitle>
+          <DialogTitle>{t("title")}</DialogTitle>
           <DialogDescription>{consumableName}</DialogDescription>
         </DialogHeader>
 
@@ -45,7 +50,7 @@ export function HistoryDialog({
             </div>
           ) : (
             <ol className="grid gap-2">
-              {historyQuery.data?.map((entry, index) => (
+              {entries.map((entry, index) => (
                 <li
                   key={entry.id}
                   className="flex items-baseline justify-between rounded-md border border-border px-3 py-2 text-sm"
@@ -54,7 +59,17 @@ export function HistoryDialog({
                     {formatDate(entry.changedOn)}
                   </span>
                   <span className="text-muted-foreground">
-                    {entry.note ?? (index === 0 ? "Most recent" : "Replaced")}
+                    {/*
+                      Which entry is the installation is a fact about position,
+                      not a string in the database: `history` is newest-first,
+                      so the oldest row is the one created with the consumable.
+                    */}
+                    {entry.note ??
+                      (index === entries.length - 1
+                        ? t("installed")
+                        : index === 0
+                          ? t("mostRecent")
+                          : t("replaced"))}
                   </span>
                 </li>
               ))}

@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -15,10 +16,13 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { signIn } from "~/lib/auth-client";
+import { useAuthErrorMessage } from "~/lib/auth-errors";
 
 export function LoginForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("auth");
+  const authErrorMessage = useAuthErrorMessage();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +36,7 @@ export function LoginForm() {
     const { error: signInError } = await signIn.email({ email, password });
 
     if (signInError) {
-      setError(signInError.message ?? "Could not sign in.");
+      setError(authErrorMessage(signInError, "signInFailed"));
       setPending(false);
       return;
     }
@@ -47,15 +51,13 @@ export function LoginForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>
-          Welcome back. Enter your email and password.
-        </CardDescription>
+        <CardTitle>{t("signIn")}</CardTitle>
+        <CardDescription>{t("signInDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               type="email"
@@ -66,7 +68,7 @@ export function LoginForm() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("password")}</Label>
             <Input
               id="password"
               type="password"
@@ -84,13 +86,13 @@ export function LoginForm() {
           ) : null}
 
           <Button type="submit" disabled={pending} className="w-full">
-            {pending ? "Signing in…" : "Sign in"}
+            {pending ? t("signingIn") : t("signIn")}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            No account yet?{" "}
+            {t("noAccount")}{" "}
             <Link className="text-primary hover:underline" href="/register">
-              Create one
+              {t("createOne")}
             </Link>
           </p>
         </form>

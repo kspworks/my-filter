@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
@@ -16,6 +17,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { useTRPC } from "~/lib/trpc/client";
+import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
 import { useToday } from "~/lib/use-today";
 
@@ -40,6 +42,9 @@ export function SystemFormDialog({
   const trpc = useTRPC();
   const refresh = useRefreshData();
   const today = useToday();
+  const t = useTranslations("systems");
+  const tCommon = useTranslations("common");
+  const onError = useErrorToast();
   const isEdit = Boolean(system);
 
   const [manufacturer, setManufacturer] = useState(system?.manufacturer ?? "");
@@ -55,15 +60,15 @@ export function SystemFormDialog({
 
   const createMutation = useMutation(
     trpc.systems.create.mutationOptions({
-      onSuccess: () => onSettled("System added."),
-      onError: (error) => toast.error(error.message),
+      onSuccess: () => onSettled(t("toast.added")),
+      onError,
     }),
   );
 
   const updateMutation = useMutation(
     trpc.systems.update.mutationOptions({
-      onSuccess: () => onSettled("System updated."),
-      onError: (error) => toast.error(error.message),
+      onSuccess: () => onSettled(t("toast.updated")),
+      onError,
     }),
   );
 
@@ -90,38 +95,37 @@ export function SystemFormDialog({
       <DialogContent>
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEdit ? "Edit system" : "Add system"}</DialogTitle>
-            <DialogDescription>
-              Where the cartridges live. Manufacturer and model make it easy to
-              find the right replacements later.
-            </DialogDescription>
+            <DialogTitle>
+              {isEdit ? t("form.editTitle") : t("form.addTitle")}
+            </DialogTitle>
+            <DialogDescription>{t("form.description")}</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="manufacturer">Manufacturer</Label>
+              <Label htmlFor="manufacturer">{t("form.manufacturer")}</Label>
               <Input
                 id="manufacturer"
                 required
                 maxLength={120}
-                placeholder="Aquafilter"
+                placeholder={t("form.manufacturerPlaceholder")}
                 value={manufacturer}
                 onChange={(event) => setManufacturer(event.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="model">Model</Label>
+              <Label htmlFor="model">{t("form.model")}</Label>
               <Input
                 id="model"
                 required
                 maxLength={120}
-                placeholder="RO-6 Standard"
+                placeholder={t("form.modelPlaceholder")}
                 value={model}
                 onChange={(event) => setModel(event.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="installedOn">Installation date</Label>
+              <Label htmlFor="installedOn">{t("form.installedOn")}</Label>
               <Input
                 id="installedOn"
                 type="date"
@@ -131,12 +135,12 @@ export function SystemFormDialog({
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">{tCommon("notes")}</Label>
               <Textarea
                 id="notes"
                 rows={2}
                 maxLength={2000}
-                placeholder="Under the kitchen sink"
+                placeholder={t("form.notesPlaceholder")}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
               />
@@ -149,10 +153,10 @@ export function SystemFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button type="submit" disabled={pending}>
-              {isEdit ? "Save changes" : "Add system"}
+              {isEdit ? tCommon("saveChanges") : t("form.addTitle")}
             </Button>
           </DialogFooter>
         </form>

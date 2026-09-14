@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -15,12 +16,15 @@ import {
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { signUp } from "~/lib/auth-client";
+import { useAuthErrorMessage } from "~/lib/auth-errors";
 
 const MIN_PASSWORD_LENGTH = 8;
 
 export function RegisterForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const t = useTranslations("auth");
+  const authErrorMessage = useAuthErrorMessage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,7 +36,7 @@ export function RegisterForm() {
     setError(null);
 
     if (password.length < MIN_PASSWORD_LENGTH) {
-      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      setError(t("passwordTooShort", { count: MIN_PASSWORD_LENGTH }));
       return;
     }
 
@@ -44,7 +48,7 @@ export function RegisterForm() {
     });
 
     if (signUpError) {
-      setError(signUpError.message ?? "Could not create the account.");
+      setError(authErrorMessage(signUpError, "signUpFailed"));
       setPending(false);
       return;
     }
@@ -57,15 +61,13 @@ export function RegisterForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
-        <CardDescription>
-          Start tracking your filter replacements.
-        </CardDescription>
+        <CardTitle>{t("createAccount")}</CardTitle>
+        <CardDescription>{t("createAccountDescription")}</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="grid gap-4" onSubmit={handleSubmit}>
           <div className="grid gap-2">
-            <Label htmlFor="name">Username</Label>
+            <Label htmlFor="name">{t("username")}</Label>
             <Input
               id="name"
               autoComplete="username"
@@ -76,7 +78,7 @@ export function RegisterForm() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("email")}</Label>
             <Input
               id="email"
               type="email"
@@ -87,7 +89,7 @@ export function RegisterForm() {
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password">{t("password")}</Label>
             <Input
               id="password"
               type="password"
@@ -98,7 +100,7 @@ export function RegisterForm() {
               onChange={(event) => setPassword(event.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              At least {MIN_PASSWORD_LENGTH} characters.
+              {t("passwordHint", { count: MIN_PASSWORD_LENGTH })}
             </p>
           </div>
 
@@ -109,13 +111,13 @@ export function RegisterForm() {
           ) : null}
 
           <Button type="submit" disabled={pending} className="w-full">
-            {pending ? "Creating account…" : "Create account"}
+            {pending ? t("creatingAccount") : t("createAccount")}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">
-            Already registered?{" "}
+            {t("alreadyRegistered")}{" "}
             <Link className="text-primary hover:underline" href="/login">
-              Sign in
+              {t("signIn")}
             </Link>
           </p>
         </form>

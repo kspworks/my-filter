@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Trash2,
 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "~/components/confirm-dialog";
@@ -37,9 +38,10 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { dueInfo } from "~/lib/due-date";
-import { formatDate } from "~/lib/format-date";
-import { CONSUMABLE_TYPE_LABELS, formatInterval } from "~/lib/labels";
+import { useFormatDate } from "~/lib/format-date";
+import { useLabels } from "~/lib/labels";
 import { useTRPC } from "~/lib/trpc/client";
+import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
 
 export type ConsumableListItem = ConsumableDraft & {
@@ -66,6 +68,11 @@ export function ConsumableRow({
 }) {
   const trpc = useTRPC();
   const refresh = useRefreshData();
+  const t = useTranslations("consumables");
+  const tCommon = useTranslations("common");
+  const labels = useLabels();
+  const formatDate = useFormatDate();
+  const onError = useErrorToast();
 
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -79,9 +86,9 @@ export function ConsumableRow({
     trpc.consumables.undoLastReplacement.mutationOptions({
       onSuccess: async () => {
         await refresh();
-        toast.success("Reverted to the previous replacement date.");
+        toast.success(t("toast.reverted"));
       },
-      onError: (error) => toast.error(error.message),
+      onError,
     }),
   );
 
@@ -91,18 +98,21 @@ export function ConsumableRow({
         await refresh();
         setBackdateOpen(false);
         toast.success(
-          `${consumable.name} replaced on ${formatDate(updated.lastChangedOn)}.`,
+          t("toast.replaced", {
+            name: consumable.name,
+            date: formatDate(updated.lastChangedOn),
+          }),
           {
             // Long enough to actually reach for: this toast is the only undo path.
             duration: 10_000,
             action: {
-              label: "Undo",
+              label: t("toast.undo"),
               onClick: () => undoMutation.mutate({ id: consumable.id }),
             },
           },
         );
       },
-      onError: (error) => toast.error(error.message),
+      onError,
     }),
   );
 
@@ -110,9 +120,9 @@ export function ConsumableRow({
     trpc.consumables.attach.mutationOptions({
       onSuccess: async () => {
         await refresh();
-        toast.success("Attached.");
+        toast.success(t("toast.attached"));
       },
-      onError: (error) => toast.error(error.message),
+      onError,
     }),
   );
 
@@ -120,9 +130,9 @@ export function ConsumableRow({
     trpc.consumables.detach.mutationOptions({
       onSuccess: async () => {
         await refresh();
-        toast.success("Detached. The item is now unassigned.");
+        toast.success(t("toast.detached"));
       },
-      onError: (error) => toast.error(error.message),
+      onError,
     }),
   );
 
@@ -131,9 +141,9 @@ export function ConsumableRow({
       onSuccess: async () => {
         await refresh();
         setConfirmingDelete(false);
-        toast.success("Consumable deleted.");
+        toast.success(t("toast.deleted"));
       },
-      onError: (error) => toast.error(error.message),
+      onError,
     }),
   );
 
@@ -141,22 +151,33 @@ export function ConsumableRow({
     (system) => system.id !== consumable.systemId,
   );
 
+  const interval = labels.interval(
+    consumable.intervalValue,
+    consumable.intervalUnit,
+  );
+  const lastChanged = formatDate(consumable.lastChangedOn);
+
   return (
     <div className="flex items-center gap-4 px-4 py-3">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate font-medium">{consumable.name}</span>
           <Badge variant="secondary">
-            {CONSUMABLE_TYPE_LABELS[consumable.type]}
+            {labels.consumableType(consumable.type)}
           </Badge>
         </div>
+        {/*
+          One message rather than JSX fragments around the values: the clause
+          order is not the same in every language.
+        */}
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Every{" "}
-          {formatInterval(consumable.intervalValue, consumable.intervalUnit)} ·
-          last changed {formatDate(consumable.lastChangedOn)}
           {showSystem && consumable.systemManufacturer
-            ? ` · ${consumable.systemManufacturer} ${consumable.systemModel}`
-            : null}
+            ? t("summaryWithSystem", {
+                interval,
+                date: lastChanged,
+                system: `${consumable.systemManufacturer} ${consumable.systemModel}`,
+              })
+            : t("summary", { interval, date: lastChanged })}
         </p>
       </div>
 
@@ -183,7 +204,7 @@ export function ConsumableRow({
           }
         >
           <RotateCcw aria-hidden />
-          Mark replaced
+          {t("markReplaced")}
         </Button>
 
         <Popover open={backdateOpen} onOpenChange={setBackdateOpen}>
@@ -191,7 +212,7 @@ export function ConsumableRow({
             <Button
               size="sm"
               variant="outline"
-              aria-label="Replace on another date"
+              aria-label={t("replaceOnAnotherDate")}
               className="rounded-l-none border-l-0 px-2"
             >
               <ChevronDown aria-hidden />
@@ -200,7 +221,9 @@ export function ConsumableRow({
           <PopoverContent className="w-64">
             <div className="grid gap-3">
               <div className="grid gap-2">
-                <Label htmlFor={`backdate-${consumable.id}`}>Replaced on</Label>
+                <Label htmlFor={`backdate-${consumable.id}`}>
+                  {t("replacedOn")}
+                </Label>
                 <Input
                   id={`backdate-${consumable.id}`}
                   type="date"
@@ -219,7 +242,7 @@ export function ConsumableRow({
                   })
                 }
               >
-                Save
+                {tCommon("save")}
               </Button>
             </div>
           </PopoverContent>
@@ -228,28 +251,28 @@ export function ConsumableRow({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon" variant="ghost" aria-label="More actions">
+          <Button size="icon" variant="ghost" aria-label={t("moreActions")}>
             <ChevronDown aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onSelect={() => setEditing(true)}>
             <Pencil aria-hidden />
-            Edit
+            {tCommon("edit")}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setShowingHistory(true)}>
             <History aria-hidden />
-            History
+            {t("history")}
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
-          <DropdownMenuLabel>Attachment</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("attachment")}</DropdownMenuLabel>
           {consumable.systemId ? (
             <DropdownMenuItem
               onSelect={() => detachMutation.mutate({ id: consumable.id })}
             >
               <Link2Off aria-hidden />
-              Detach
+              {t("detach")}
             </DropdownMenuItem>
           ) : null}
           {otherSystems.map((system) => (
@@ -273,7 +296,7 @@ export function ConsumableRow({
             onSelect={() => setConfirmingDelete(true)}
           >
             <Trash2 aria-hidden />
-            Delete
+            {tCommon("delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -298,8 +321,8 @@ export function ConsumableRow({
       <ConfirmDialog
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}
-        title={`Delete ${consumable.name}?`}
-        description="Its replacement history will be deleted too. This cannot be undone."
+        title={t("deleteTitle", { name: consumable.name })}
+        description={t("deleteBody")}
         pending={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate({ id: consumable.id })}
       />

@@ -4,6 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "~/components/confirm-dialog";
@@ -15,8 +16,9 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import { compareByUrgency, dueInfo } from "~/lib/due-date";
-import { formatDate } from "~/lib/format-date";
+import { useFormatDate } from "~/lib/format-date";
 import { useTRPC } from "~/lib/trpc/client";
+import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
 import { useToday } from "~/lib/use-today";
 
@@ -25,6 +27,11 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
   const router = useRouter();
   const refresh = useRefreshData();
   const today = useToday();
+  const t = useTranslations("systems");
+  const tCommon = useTranslations("common");
+  const tConsumables = useTranslations("consumables");
+  const formatDate = useFormatDate();
+  const onError = useErrorToast();
 
   const [editing, setEditing] = useState(false);
   const [adding, setAdding] = useState(false);
@@ -43,10 +50,10 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
     trpc.systems.delete.mutationOptions({
       onSuccess: async () => {
         await refresh();
-        toast.success("System deleted. Its consumables are now unassigned.");
+        toast.success(t("toast.deleted"));
         router.push("/systems");
       },
-      onError: (error) => toast.error(error.message),
+      onError,
     }),
   );
 
@@ -58,9 +65,9 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
-          <p className="font-medium">System not found</p>
+          <p className="font-medium">{t("notFound")}</p>
           <Button asChild variant="outline" className="mt-4">
-            <Link href="/systems">Back to systems</Link>
+            <Link href="/systems">{t("backToSystems")}</Link>
           </Button>
         </CardContent>
       </Card>
@@ -71,6 +78,7 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
   const items = [...(consumablesQuery.data ?? [])].sort((a, b) =>
     compareByUrgency(dueInfo(a, today), dueInfo(b, today)),
   );
+  const systemName = `${system.manufacturer} ${system.model}`;
 
   return (
     <div className="grid gap-6">
@@ -80,29 +88,29 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="size-4" aria-hidden />
-          Systems
+          {t("title")}
         </Link>
       </div>
 
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            {system.manufacturer} {system.model}
+            {systemName}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Installed {formatDate(system.installedOn)}
+            {t("installedOn", { date: formatDate(system.installedOn) })}
             {system.notes ? ` · ${system.notes}` : null}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setEditing(true)}>
             <Pencil aria-hidden />
-            Edit
+            {tCommon("edit")}
           </Button>
           <Button
             variant="outline"
             onClick={() => setConfirmingDelete(true)}
-            aria-label="Delete system"
+            aria-label={t("deleteLabel")}
           >
             <Trash2 aria-hidden />
           </Button>
@@ -111,16 +119,16 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
 
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-medium text-muted-foreground">
-          Consumables ({items.length})
+          {t("consumablesHeading", { count: items.length })}
         </h2>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setChoosingPreset(true)}>
             <Sparkles aria-hidden />
-            Add standard set
+            {t("addStandardSet")}
           </Button>
           <Button onClick={() => setAdding(true)}>
             <Plus aria-hidden />
-            Add consumable
+            {tConsumables("add")}
           </Button>
         </div>
       </div>
@@ -133,8 +141,7 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
             </div>
           ) : items.length === 0 ? (
             <p className="p-8 text-center text-sm text-muted-foreground">
-              No cartridges tracked for this system yet. "Add standard set"
-              fills in a typical osmosis stack in one step.
+              {t("noCartridges")}
             </p>
           ) : (
             items.map((item) => (
@@ -171,13 +178,11 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
       <ConfirmDialog
         open={confirmingDelete}
         onOpenChange={setConfirmingDelete}
-        title={`Delete ${system.manufacturer} ${system.model}?`}
+        title={t("deleteTitle", { name: systemName })}
         description={
           items.length > 0
-            ? `Its ${items.length} ${
-                items.length === 1 ? "consumable" : "consumables"
-              } will be kept and moved to Unassigned, along with their history.`
-            : "This cannot be undone."
+            ? t("deleteBody", { count: items.length })
+            : tCommon("cannotBeUndone")
         }
         pending={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate({ id: systemId })}

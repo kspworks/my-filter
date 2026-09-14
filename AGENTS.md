@@ -50,10 +50,52 @@ Anything touching a `systemId` from input must call `assertOwnsSystem` first.
 `consumable_replacements`. Any write that touches the log must end with `syncLastChanged`
 inside the same transaction, so the two can never drift.
 
-## i18n readiness
+## i18n
 
-Enum-like values (`type`, `intervalUnit`) are stored as stable keys and rendered through
-`~/lib/labels.ts`; dates are formatted only in `~/lib/format-date.ts`. Keep display text
-out of the database and out of ad-hoc `toLocaleDateString` calls.
+English and Ukrainian, via next-intl. Message catalogues are `src/messages/{en,uk}.json`
+and must stay structurally identical — `src/i18n/messages.test.ts` fails on a missing key,
+an untranslated string or a broken ICU message.
+
+The active locale lives in a **cookie**, not the URL. There is no `[locale]` segment and no
+`proxy.ts` (Next 16's rename of middleware) — `src/i18n/request.ts` resolves cookie →
+`Accept-Language` → `en`. Switching writes the cookie through the Server Action in
+`src/i18n/set-locale.ts` and calls `router.refresh()`; cookies cannot be set while a Server
+Component renders.
+
+Display text lives in exactly three places:
+
+- **`~/lib/labels.ts`** — enum-like values (`type`, `intervalUnit`, `DueStatus`) are stored
+  as stable keys and rendered through `useLabels()`.
+- **`~/lib/format-date.ts`** — the only module that formats a date. No ad-hoc
+  `toLocaleDateString`, and never localize the `yyyy-MM-dd` pattern in `~/lib/due-date.ts`:
+  that one is machine serialization.
+- **the catalogues** — anything else a person reads.
+
+**Never build a plural by hand.** Ukrainian has four categories to English's two, and its
+`one` category includes 21, 31 and 101 (1 день / 3 дні / 5 днів / 21 день). Every count goes
+through an ICU `{count, plural, …}` message. For the same reason, never assemble a sentence
+from JSX fragments around an interpolated value — word order differs. Use one parameterized
+message, and wrap interpolated user data in guillemets (`«{name}»`) so the surrounding
+grammar does not have to decline it.
+
+Server-side, procedures raise errors through `ctx.t` (see `src/server/trpc/context.ts`,
+which reads the locale off the request's `Cookie` header). Do **not** reach for
+`getTranslations()` from `next-intl/server` in a router — `ownership.test.ts` calls routers
+directly through `createCallerFactory`, where no request scope exists.
+
+Keep display text out of the database. `consumables.name` is user data: `applyPreset`
+resolves a preset's cartridge name in the caller's language *once*, at creation, and never
+re-translates it. The replacement log stores no label at all — which entry is the
+installation, the most recent or a plain replacement is derived from its position.
+
+## Theme
+
+Dark by default, via next-themes (`src/components/theme-provider.tsx`), with a
+Light/Dark/System toggle. `globals.css` declares `@custom-variant dark (&:is(.dark *))`, so
+the provider uses `attribute="class"` — not `data-theme`. `<html>` needs
+`suppressHydrationWarning` because the pre-paint script sets that class before React runs;
+for the same reason, never branch on `useTheme()`'s value during render (the theme toggle
+picks its icon with `dark:` classes instead). The theme is deliberately in `localStorage`,
+not a cookie: reading a cookie in the root layout opts the whole app out of prerendering.
 
 <!-- END:project-conventions -->

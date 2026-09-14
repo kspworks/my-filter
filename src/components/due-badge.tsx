@@ -1,7 +1,9 @@
+"use client";
+
 import { Badge } from "~/components/ui/badge";
 import type { DueStatus } from "~/lib/due-date";
-import { formatDuePhrase } from "~/lib/format-date";
-import { DUE_STATUS_LABELS } from "~/lib/labels";
+import { useDuePhrase } from "~/lib/format-date";
+import { useLabels } from "~/lib/labels";
 import { cn } from "~/lib/utils";
 
 const STATUS_CLASSES: Record<DueStatus, string> = {
@@ -20,13 +22,16 @@ export function DueBadge({
   daysUntilDue: number;
   className?: string;
 }) {
+  const labels = useLabels();
+  const duePhrase = useDuePhrase();
+
   return (
     <Badge
       variant="outline"
       className={cn(STATUS_CLASSES[status], "font-medium", className)}
-      title={DUE_STATUS_LABELS[status]}
+      title={labels.dueStatus(status)}
     >
-      {formatDuePhrase(daysUntilDue)}
+      {duePhrase(daysUntilDue)}
     </Badge>
   );
 }
