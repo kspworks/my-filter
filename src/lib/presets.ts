@@ -45,42 +45,42 @@ export type Preset = {
 const SEDIMENT: PresetItem = {
   type: "sediment",
   nameKey: "sediment_pp_5",
-  intervalValue: 6,
+  intervalValue: 3,
   intervalUnit: "months",
 };
 
 const CARBON_GAC: PresetItem = {
   type: "carbon_gac",
   nameKey: "carbon_gac",
-  intervalValue: 6,
+  intervalValue: 3,
   intervalUnit: "months",
 };
 
 const CARBON_BLOCK: PresetItem = {
   type: "carbon_block",
   nameKey: "carbon_block_cto",
-  intervalValue: 6,
+  intervalValue: 3,
   intervalUnit: "months",
 };
 
 const MEMBRANE: PresetItem = {
   type: "membrane",
   nameKey: "ro_membrane_50gpd",
-  intervalValue: 24,
+  intervalValue: 12,
   intervalUnit: "months",
 };
 
 const POST_CARBON: PresetItem = {
   type: "post_carbon",
   nameKey: "post_carbon_inline",
-  intervalValue: 12,
+  intervalValue: 6,
   intervalUnit: "months",
 };
 
 const MINERALIZER: PresetItem = {
   type: "mineralizer",
   nameKey: "mineralizer",
-  intervalValue: 12,
+  intervalValue: 6,
   intervalUnit: "months",
 };
 
