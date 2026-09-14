@@ -38,7 +38,10 @@ recreates that user, which also signs out any open session for it.
 | `pnpm build` / `pnpm start` | Production build / serve |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm lint` / `pnpm lint:fix` | Biome check (and autofix) |
-| `pnpm test` | Vitest — due-date logic and per-user isolation |
+| `pnpm test` | Vitest — unit, router/database integration and component tests |
+| `pnpm test:coverage` | The same, with a coverage report and thresholds |
+| `pnpm test:e2e` | Playwright against a production build |
+| `pnpm test:all` | Both suites |
 | `pnpm db:generate` | Create a migration from schema changes |
 | `pnpm db:migrate` | Apply migrations |
 | `pnpm db:studio` | Drizzle Studio |
@@ -59,7 +62,16 @@ built on.
 **Privacy.** Systems and consumables are private per user and will never be shareable, so
 ownership is enforced on every single query rather than modelled as permissions. Another
 user's row is indistinguishable from one that does not exist (`NOT_FOUND`, not
-`FORBIDDEN`). `src/server/trpc/routers/ownership.test.ts` holds that line.
+`FORBIDDEN`). `src/server/trpc/routers/ownership.test.ts` holds that line, and
+`auth-gate.test.ts` walks the router so every *new* procedure is checked the day it lands.
+
+**Tests.** The suite is built to be run after a dependency upgrade, so it leans on real
+seams rather than mocks. Router tests run against an in-memory SQLite built from the actual
+migrations; component tests use tRPC's `unstable_localLink`, so a click in a rendered
+component travels through react-query, the real router, Zod and Drizzle into that database
+— nothing stubs `fetch`. Playwright covers what Vitest structurally cannot: async Server
+Components, the auth redirects, the locale Server Action and Radix overlays. See the
+**Tests** section of `AGENTS.md` for the conventions.
 
 **Dates.** Calendar dates are stored as `TEXT 'YYYY-MM-DD'`; instants as epoch
 milliseconds. "Today" is determined in the browser, not on the server, so a due date is

@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # A weekly run against a fresh install is what turns this suite into an
+  # early warning about upstream changes, rather than something that only
+  # speaks up once someone has already started an upgrade.
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The app validates its environment at import time, so even `next build`
+  # needs these. They point at throwaway local state.
+  DATABASE_URL: "file:./.e2e/e2e.db"
+  BETTER_AUTH_SECRET: "ci-secret-ci-secret-ci-secret-ci-secret"
+  BETTER_AUTH_URL: "http://127.0.0.1:3100"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit and integration tests
+        run: pnpm test:coverage
+
+      # Not just a smoke check: this is the only place the React Compiler runs,
+      # so a component that breaks the Rules of React fails here and nowhere else.
+      # `next build` opens the database while collecting page data, so it has to
+      # exist first.
+      - name: Prepare the throwaway database
+        run: pnpm test:e2e:db
+
+      - name: Build
+        run: pnpm build
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: pnpm test:e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

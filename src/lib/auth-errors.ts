@@ -7,8 +7,10 @@ import { useCallback } from "react";
  * better-auth writes its own English messages. It also returns a stable `code`,
  * so translate off that and keep the library's text only as a last resort —
  * a wrong-password message a user cannot read is worse than a generic one.
+ *
+ * Exported so `catalogue-coverage.test.ts` can assert each code has a message.
  */
-const KNOWN_CODES = [
+export const KNOWN_CODES = [
   "INVALID_EMAIL_OR_PASSWORD",
   "USER_ALREADY_EXISTS",
   "INVALID_EMAIL",

@@ -1,13 +1,6 @@
-import { createClient } from "@libsql/client";
-import { createId } from "@paralleldrive/cuid2";
-import { drizzle } from "drizzle-orm/libsql";
-import { migrate } from "drizzle-orm/libsql/migrator";
-import { beforeEach, describe, expect, it } from "vitest";
-import { createAppTranslator } from "~/i18n/translator";
-import * as schema from "~/server/db/schema";
-import type { TRPCContext } from "~/server/trpc/context";
-import { createCallerFactory } from "~/server/trpc/init";
-import { appRouter } from "~/server/trpc/routers/_app";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { callerFor } from "~/test-utils/caller";
+import { createUser, makeTestDb, type TestDb } from "~/test-utils/db";
 
 /**
  * Systems and consumables are private per user and always will be, so the rule
@@ -15,51 +8,21 @@ import { appRouter } from "~/server/trpc/routers/_app";
  * a row that does not exist.
  */
 
-const createCaller = createCallerFactory(appRouter);
-
-let db: ReturnType<typeof drizzle<typeof schema>>;
-let t: TRPCContext["t"];
+let db: TestDb;
+let close: () => void;
 let alice: string;
 let bob: string;
 
-/**
- * A real English translator rather than a stub, so the assertions below still
- * read against the text a user would actually be shown.
- */
-function callerFor(userId: string) {
-  return createCaller({
-    db,
-    session: null,
-    user: { id: userId } as NonNullable<TRPCContext["user"]>,
-    locale: "en",
-    t,
-  } as TRPCContext);
-}
-
-async function createUser(name: string) {
-  const id = createId();
-  await db.insert(schema.user).values({
-    id,
-    name,
-    email: `${name}@example.com`,
-    emailVerified: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
-  return id;
-}
-
 beforeEach(async () => {
-  t = await createAppTranslator("en");
-  const client = createClient({ url: ":memory:" });
-  db = drizzle(client, { schema });
-  await migrate(db, { migrationsFolder: "./drizzle" });
-  alice = await createUser("alice");
-  bob = await createUser("bob");
+  ({ db, close } = await makeTestDb());
+  alice = await createUser(db, "alice");
+  bob = await createUser(db, "bob");
 });
 
+afterEach(() => close());
+
 async function aliceWithSystemAndConsumable() {
-  const caller = callerFor(alice);
+  const caller = await callerFor(db, alice);
   const system = await caller.systems.create({
     manufacturer: "Aquafilter",
     model: "RO-6",
@@ -79,7 +42,7 @@ async function aliceWithSystemAndConsumable() {
 describe("cross-user access", () => {
   it("hides another user's system", async () => {
     const { system } = await aliceWithSystemAndConsumable();
-    const mallory = callerFor(bob);
+    const mallory = await callerFor(db, bob);
 
     await expect(mallory.systems.byId({ id: system.id })).rejects.toThrow(
       /not found/i,
@@ -100,7 +63,7 @@ describe("cross-user access", () => {
 
   it("hides another user's consumable", async () => {
     const { consumable } = await aliceWithSystemAndConsumable();
-    const mallory = callerFor(bob);
+    const mallory = await callerFor(db, bob);
 
     await expect(
       mallory.consumables.update({
@@ -131,7 +94,7 @@ describe("cross-user access", () => {
 
   it("refuses to attach a consumable to somebody else's system", async () => {
     const { system } = await aliceWithSystemAndConsumable();
-    const mallory = callerFor(bob);
+    const mallory = await callerFor(db, bob);
     const own = await mallory.consumables.create({
       type: "membrane",
       name: "Bob's membrane",
@@ -147,7 +110,7 @@ describe("cross-user access", () => {
 
   it("refuses to apply a preset to somebody else's system", async () => {
     const { system } = await aliceWithSystemAndConsumable();
-    const mallory = callerFor(bob);
+    const mallory = await callerFor(db, bob);
 
     await expect(
       mallory.systems.applyPreset({
