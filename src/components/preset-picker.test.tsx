@@ -44,7 +44,7 @@ describe("choosing a set", () => {
     // Item lines render name plus interval through one parameterized message;
     // the post-carbon polisher appears in both RO sets.
     expect(
-      screen.getAllByText("Inline post carbon — every 12 months").length,
+      screen.getAllByText("Inline post carbon — every 6 months").length,
     ).toBe(2);
   });
 
