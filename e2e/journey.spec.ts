@@ -29,7 +29,19 @@ test("sets a system up, fills it from a preset and records a replacement", async
     ).toBeVisible();
   });
 
+  await test.step("the dashboard shows it before anything is attached", async () => {
+    await page.getByRole("link", { name: "Dashboard" }).click();
+
+    const group = page
+      .locator("div[data-slot='card']")
+      .filter({ hasText: `${MANUFACTURER} RO-6` })
+      .first();
+    await expect(group).toContainText("0 items");
+    await expect(group).toContainText("No cartridges tracked yet");
+  });
+
   await test.step("apply a standard cartridge set", async () => {
+    // The group title links to the system, from the dashboard as from /systems.
     await page.getByRole("link", { name: new RegExp(MANUFACTURER) }).click();
     await expect(
       page.getByRole("heading", { name: `${MANUFACTURER} RO-6` }),

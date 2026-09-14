@@ -41,6 +41,14 @@ async function addConsumable(
   });
 }
 
+async function addSystem(manufacturer: string, model: string) {
+  return app.caller.systems.create({
+    manufacturer,
+    model,
+    installedOn: "2024-01-01",
+  });
+}
+
 describe("empty state", () => {
   it("invites a first system and disables adding a cartridge", async () => {
     app.render(<DashboardView />);
@@ -50,6 +58,21 @@ describe("empty state", () => {
       screen.getByRole("button", { name: /add consumable/i }),
     ).toBeDisabled();
     expect(screen.getByRole("button", { name: /add system/i })).toBeEnabled();
+  });
+
+  // The regression this file missed: a system with nothing attached used to
+  // leave the dashboard claiming nothing was tracked at all.
+  it("shows a system that has no cartridges instead of the empty state", async () => {
+    await addSystem("Aquafilter", "RO-6");
+
+    app.render(<DashboardView />);
+
+    expect(await screen.findByText("Aquafilter RO-6")).toBeInTheDocument();
+    expect(screen.queryByText("Nothing tracked yet")).not.toBeInTheDocument();
+    // A system exists, so a cartridge can now be attached to something.
+    expect(
+      screen.getByRole("button", { name: /add consumable/i }),
+    ).toBeEnabled();
   });
 });
 
@@ -143,6 +166,44 @@ describe("grouping", () => {
       "href",
       "/consumables",
     );
+  });
+
+  it("tells an empty system's group it has nothing attached", async () => {
+    const system = await addSystem("Aquafilter", "RO-6");
+
+    app.render(<DashboardView />);
+
+    const group = (await screen.findByText("Aquafilter RO-6")).closest(
+      "div[data-slot='card']",
+    );
+
+    expect(group).toHaveTextContent("0 items");
+    expect(group).toHaveTextContent(/No cartridges tracked yet/);
+    expect(
+      await screen.findByRole("link", { name: "Aquafilter RO-6" }),
+    ).toHaveAttribute("href", `/systems/${system.id}`);
+  });
+
+  it("sorts empty systems after the urgent ones and above the spare shelf", async () => {
+    const urgent = await addSystem("Urgent", "Unit");
+    // Two empty systems, so the comparator meets Infinity on both sides.
+    await addSystem("Bare", "Unit");
+    await addSystem("Cupboard", "Unit");
+    await addConsumable("Very overdue", "2025-01-01", urgent.id);
+    await addConsumable("Spare", "2024-01-01");
+
+    app.render(<DashboardView />);
+
+    await screen.findByText("Urgent Unit");
+    const titles = screen.getAllByRole("link").map((node) => node.textContent);
+
+    // Empty groups keep the server's manufacturer order among themselves.
+    expect(titles).toEqual([
+      "Urgent Unit",
+      "Bare Unit",
+      "Cupboard Unit",
+      "Unassigned",
+    ]);
   });
 
   it("counts the cartridges in a group through the plural message", async () => {

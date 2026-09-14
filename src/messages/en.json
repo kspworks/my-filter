@@ -65,6 +65,7 @@
     "title": "Dashboard",
     "subtitle": "What needs replacing, most urgent first.",
     "unassigned": "Unassigned",
+    "groupEmpty": "No cartridges tracked yet. Open this system to add a standard set.",
     "emptyTitle": "Nothing tracked yet",
     "emptyBody": "Add a water filter system, then apply a preset cartridge set or add consumables one by one.",
     "emptyAction": "Add your first system"

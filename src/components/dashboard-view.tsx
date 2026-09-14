@@ -9,6 +9,7 @@ import { ConsumableFormDialog } from "~/components/consumable-form-dialog";
 import {
   type ConsumableListItem,
   ConsumableRow,
+  type SystemOption,
 } from "~/components/consumable-row";
 import { SystemFormDialog } from "~/components/system-form-dialog";
 import { Button } from "~/components/ui/button";
@@ -29,9 +30,29 @@ type Group = {
   urgency: number;
 };
 
-/** `title` is null for the spare shelf — the caller translates that one. */
-function groupBySystem(items: ConsumableListItem[], today: string): Group[] {
+/**
+ * One group per system — seeded from the systems list, not derived from the
+ * consumables — so a system with nothing attached to it yet still gets a card.
+ * `title` is null for the spare shelf, which the caller translates.
+ */
+function groupBySystem(
+  items: ConsumableListItem[],
+  systems: SystemOption[],
+  today: string,
+): Group[] {
   const groups = new Map<string, Group>();
+
+  // `systems.list` comes back ordered by manufacturer then model, and `Map`
+  // keeps insertion order, so equally urgent groups stay in that order below.
+  for (const system of systems) {
+    groups.set(system.id, {
+      key: system.id,
+      title: `${system.manufacturer} ${system.model}`,
+      href: `/systems/${system.id}`,
+      items: [],
+      urgency: Number.POSITIVE_INFINITY,
+    });
+  }
 
   for (const item of items) {
     const key = item.systemId ?? UNASSIGNED_KEY;
@@ -63,6 +84,9 @@ function groupBySystem(items: ConsumableListItem[], today: string): Group[] {
     // The spare shelf is never urgent enough to lead the page.
     if (a.key === UNASSIGNED_KEY) return 1;
     if (b.key === UNASSIGNED_KEY) return -1;
+    // Two empty systems are both `Infinity`, and subtracting those gives `NaN`,
+    // which would quietly scramble the sort. Equal urgency keeps insertion order.
+    if (a.urgency === b.urgency) return 0;
     return a.urgency - b.urgency;
   });
 }
@@ -104,6 +128,9 @@ export function DashboardView() {
   const items = consumablesQuery.data ?? [];
   const systems = systemsQuery.data ?? [];
 
+  // Both queries feed the list now, so neither may render a half-built page.
+  const isPending = consumablesQuery.isPending || systemsQuery.isPending;
+
   const counts = items.reduce<Record<DueStatus, number>>(
     (acc, item) => {
       acc[dueInfo(item, today).status] += 1;
@@ -112,7 +139,7 @@ export function DashboardView() {
     { overdue: 0, due_soon: 0, ok: 0 },
   );
 
-  const groups = groupBySystem(items, today);
+  const groups = groupBySystem(items, systems, today);
 
   return (
     <div className="grid gap-6">
@@ -130,7 +157,7 @@ export function DashboardView() {
           </Button>
           <Button
             onClick={() => setAddingConsumable(true)}
-            disabled={systems.length === 0}
+            disabled={isPending || systems.length === 0}
           >
             <Plus aria-hidden />
             {tConsumables("add")}
@@ -149,19 +176,19 @@ export function DashboardView() {
             </CardHeader>
             <CardContent>
               <span className="text-3xl font-semibold tabular-nums">
-                {consumablesQuery.isPending ? "—" : counts[tile.status]}
+                {isPending ? "—" : counts[tile.status]}
               </span>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {consumablesQuery.isPending ? (
+      {isPending ? (
         <div className="grid gap-3">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />
         </div>
-      ) : items.length === 0 ? (
+      ) : items.length === 0 && systems.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="font-medium">{t("emptyTitle")}</p>
@@ -192,14 +219,20 @@ export function DashboardView() {
               </span>
             </CardHeader>
             <CardContent className="divide-y divide-border p-0">
-              {group.items.map((item) => (
-                <ConsumableRow
-                  key={item.id}
-                  consumable={item}
-                  today={today}
-                  systems={systems}
-                />
-              ))}
+              {group.items.length === 0 ? (
+                <p className="p-8 text-center text-sm text-muted-foreground">
+                  {t("groupEmpty")}
+                </p>
+              ) : (
+                group.items.map((item) => (
+                  <ConsumableRow
+                    key={item.id}
+                    consumable={item}
+                    today={today}
+                    systems={systems}
+                  />
+                ))
+              )}
             </CardContent>
           </Card>
         ))
