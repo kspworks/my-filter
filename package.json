@@ -24,7 +24,8 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:backfill-locales": "tsx scripts/backfill-locales.ts",
     "db:backup": "tsx scripts/backup-db.ts",
-    "db:delete-user": "tsx scripts/delete-user.ts"
+    "db:delete-user": "tsx scripts/delete-user.ts",
+    "check-updates": "npm-check-updates"
   },
   "dependencies": {
     "@libsql/client": "0.18.0",
@@ -67,6 +68,7 @@
     "dotenv": "^17.4.2",
     "drizzle-kit": "0.31.10",
     "jsdom": "^30.0.1",
+    "npm-check-updates": "^23.1.0",
     "shadcn": "^4.21.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.13",
