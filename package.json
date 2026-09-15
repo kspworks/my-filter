@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "vercel-build": "pnpm run build && pnpm run db:migrate",
     "start": "next start",
     "lint": "biome check",
     "lint:fix": "biome check --write",
