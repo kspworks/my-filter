@@ -10,6 +10,9 @@ import { defineConfig, devices } from "@playwright/test";
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const baseURL = `http://127.0.0.1:${PORT}`;
 
+/** Shared with `e2e/notifications.spec.ts`, which drives the cron endpoint. */
+export const E2E_CRON_SECRET = "e2e-cron-secret-e2e-cron-secret";
+
 export default defineConfig({
   testDir: "./e2e",
   // One SQLite file behind the server, so specs share state and must not race.
@@ -35,6 +38,10 @@ export default defineConfig({
       DATABASE_URL: "file:./.e2e/e2e.db",
       BETTER_AUTH_SECRET: "e2e-secret-e2e-secret-e2e-secret-e2e-secret",
       BETTER_AUTH_URL: baseURL,
+      // The digest endpoint is gated on this and refuses everyone without it,
+      // so the spec needs it to reach anything past the 401.
+      CRON_SECRET: E2E_CRON_SECRET,
+      MAIL_TRANSPORT: "log",
     },
   },
   projects: [

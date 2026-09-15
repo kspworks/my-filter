@@ -7,6 +7,7 @@ import {
   dueStatus,
   nextDueOn,
   toDateString,
+  todayInTimeZone,
 } from "~/lib/due-date";
 
 describe("nextDueOn", () => {
@@ -99,5 +100,50 @@ describe("toDateString", () => {
     expect(toDateString(localLateEvening)).toBe("2026-09-14");
     const localEarlyMorning = new Date(2026, 8, 14, 0, 30, 0);
     expect(toDateString(localEarlyMorning)).toBe("2026-09-14");
+  });
+});
+
+describe("todayInTimeZone", () => {
+  const KYIV = "Europe/Kyiv";
+
+  it("reports the reader's calendar day, not the process's", () => {
+    // 22:30 UTC on New Year's Eve is already the 2nd in Kyiv. This is the whole
+    // reason the helper exists: Vercel runs the cron in UTC.
+    const lateEvening = new Date("2026-01-01T22:30:00Z");
+
+    expect(todayInTimeZone(KYIV, lateEvening)).toBe("2026-01-02");
+    expect(todayInTimeZone("UTC", lateEvening)).toBe("2026-01-01");
+  });
+
+  it("puts the 09:00 UTC cron on the right day in both halves of the year", () => {
+    // Kyiv is UTC+2 in winter and UTC+3 in summer, so the job lands at 11:00
+    // local in January and 12:00 in June. Different hour, same calendar day —
+    // which is the property the digest actually depends on.
+    expect(todayInTimeZone(KYIV, new Date("2026-01-15T09:00:00Z"))).toBe(
+      "2026-01-15",
+    );
+    expect(todayInTimeZone(KYIV, new Date("2026-07-15T09:00:00Z"))).toBe(
+      "2026-07-15",
+    );
+  });
+
+  it("survives both daylight-saving switches", () => {
+    // Spring forward (2026-03-29) and fall back (2026-10-25), at the half hour
+    // either side of midnight UTC where the offset is in play.
+    expect(todayInTimeZone(KYIV, new Date("2026-03-28T22:30:00Z"))).toBe(
+      "2026-03-29",
+    );
+    expect(todayInTimeZone(KYIV, new Date("2026-10-24T21:30:00Z"))).toBe(
+      "2026-10-25",
+    );
+  });
+
+  it("pads to a string `parseISO` and the database both accept", () => {
+    // Also the canary for a Node build without full ICU: a stripped one ignores
+    // `timeZone` and silently answers in UTC.
+    const dateString = todayInTimeZone(KYIV, new Date("2026-03-05T12:00:00Z"));
+
+    expect(dateString).toBe("2026-03-05");
+    expect(dateString).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

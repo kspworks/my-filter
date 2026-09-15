@@ -36,6 +36,7 @@ beforeEach(async () => {
   await db.delete(schema.session);
   await db.delete(schema.account);
   await db.delete(schema.verification);
+  await db.delete(schema.userSettings);
   await db.delete(schema.user);
 });
 
@@ -181,5 +182,54 @@ describe("the tRPC context built from a real request", () => {
     // Procedures raise errors through `ctx.t`, so this is what a Ukrainian
     // user would actually be shown.
     expect(ctx.t("errors.systemNotFound")).toMatch(/[Ѐ-ӿ]/);
+  });
+});
+
+describe("recording the language at sign-in", () => {
+  async function signIn(headers: Record<string, string> = {}) {
+    return auth.api.signInEmail({
+      body: { email: CREDENTIALS.email, password: CREDENTIALS.password },
+      headers: new Headers(headers),
+    });
+  }
+
+  async function storedLocale() {
+    const [row] = await db.select().from(schema.userSettings);
+    return row?.locale;
+  }
+
+  it("copies the cookie's choice where a background job can read it", async () => {
+    // The locale is per-browser and the digest has no browser. Sign-in is the
+    // moment a request carrying the choice is guaranteed to exist.
+    await signUp();
+    await signIn({ cookie: "theme=dark; locale=uk" });
+
+    expect(await storedLocale()).toBe("uk");
+  });
+
+  it("falls back to the browser's stated preference when nothing was chosen", async () => {
+    await signUp();
+    await signIn({ "accept-language": "uk-UA,uk;q=0.9,en;q=0.5" });
+
+    expect(await storedLocale()).toBe("uk");
+  });
+
+  it("lets a choice stand against a browser that disagrees", async () => {
+    await signUp();
+    await signIn({ cookie: "locale=en" });
+    // A guess must never overwrite a choice — somebody who deliberately picked
+    // English keeps it when they next sign in on a Ukrainian phone.
+    await signIn({ "accept-language": "uk-UA" });
+
+    expect(await storedLocale()).toBe("en");
+  });
+
+  it("overwrites an earlier choice with a later one", async () => {
+    await signUp();
+    await signIn({ cookie: "locale=en" });
+    await signIn({ cookie: "locale=uk" });
+
+    expect(await storedLocale()).toBe("uk");
+    expect(await db.select().from(schema.userSettings)).toHaveLength(1);
   });
 });

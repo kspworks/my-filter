@@ -16,10 +16,10 @@ import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
 import { compareByUrgency, dueInfo } from "~/lib/due-date";
-import { useFormatDate } from "~/lib/format-date";
 import { useTRPC } from "~/lib/trpc/client";
 import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
+import { useFormatDate } from "~/lib/use-format-date";
 import { useToday } from "~/lib/use-today";
 
 export function SystemDetailView({ systemId }: { systemId: string }) {

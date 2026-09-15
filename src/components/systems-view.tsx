@@ -9,8 +9,8 @@ import { SystemFormDialog } from "~/components/system-form-dialog";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
-import { useFormatDate } from "~/lib/format-date";
 import { useTRPC } from "~/lib/trpc/client";
+import { useFormatDate } from "~/lib/use-format-date";
 
 export function SystemsView() {
   const trpc = useTRPC();

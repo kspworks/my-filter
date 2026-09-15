@@ -26,12 +26,18 @@ export function isLocale(value: unknown): value is Locale {
 }
 
 /**
- * Best guess for someone who has never chosen: first supported language in
- * `Accept-Language`, by quality. Only the primary subtag is compared, so
- * `uk-UA` matches `uk`. Anything unrecognised falls through to the default.
+ * The first supported language in `Accept-Language`, by quality, or `null` when
+ * the header names none of them.
+ *
+ * The `null` is the point: it separates "this browser asked for Ukrainian" from
+ * "nothing usable was said", which `negotiateLocale` collapses into the same
+ * answer. Anything recording a preference needs the difference — a default
+ * written down looks exactly like a choice afterwards.
  */
-export function negotiateLocale(acceptLanguage: string | null): Locale {
-  if (!acceptLanguage) return DEFAULT_LOCALE;
+export function negotiateLocaleIfSupported(
+  acceptLanguage: string | null,
+): Locale | null {
+  if (!acceptLanguage) return null;
 
   const ranked = acceptLanguage
     .split(",")
@@ -53,7 +59,37 @@ export function negotiateLocale(acceptLanguage: string | null): Locale {
     if (isLocale(primary)) return primary;
   }
 
-  return DEFAULT_LOCALE;
+  return null;
+}
+
+/**
+ * Best guess for someone who has never chosen: first supported language in
+ * `Accept-Language`, by quality. Only the primary subtag is compared, so
+ * `uk-UA` matches `uk`. Anything unrecognised falls through to the default.
+ */
+export function negotiateLocale(acceptLanguage: string | null): Locale {
+  return negotiateLocaleIfSupported(acceptLanguage) ?? DEFAULT_LOCALE;
+}
+
+/**
+ * Whether the header carries a language somebody actually chose.
+ *
+ * `localeFromCookieHeader` folds "absent" and "present but unusable" into the
+ * default, which is right for rendering and wrong for deciding whether to
+ * overwrite a stored preference — a guess must never beat a choice.
+ */
+export function hasLocaleCookie(cookieHeader: string | null): boolean {
+  if (!cookieHeader) return false;
+
+  for (const pair of cookieHeader.split(";")) {
+    const index = pair.indexOf("=");
+    if (index === -1) continue;
+    if (pair.slice(0, index).trim() !== LOCALE_COOKIE) continue;
+
+    return isLocale(decodeURIComponent(pair.slice(index + 1).trim()));
+  }
+
+  return false;
 }
 
 /** Reads the locale out of a raw `Cookie` header — for contexts without `cookies()`. */

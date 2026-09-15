@@ -35,6 +35,35 @@ export function todayString(): string {
 }
 
 /**
+ * Today as `YYYY-MM-DD` in a named IANA zone.
+ *
+ * Everywhere else "today" is the viewer's own (`~/lib/use-today`), because the
+ * server's timezone is not theirs. The daily digest has no viewer: it fires at
+ * a fixed UTC hour, and this is what turns that instant into the calendar day
+ * its readers are actually living in. On Vercel the process runs in UTC, which
+ * after 21:00 Kyiv is already the wrong day.
+ *
+ * `formatToParts` rather than `format`: the part list is the one form a locale
+ * change cannot re-order.
+ */
+export function todayInTimeZone(
+  timeZone: string,
+  now: Date = new Date(),
+): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((entry) => entry.type === type)?.value ?? "";
+
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
+/**
  * `parseISO` on a date-only string yields local midnight, which is what these
  * calendar dates mean. Never `new Date(string)` — that parses as UTC and shifts
  * the day for anyone west of Greenwich.
@@ -90,7 +119,16 @@ export function dueInfo(item: Serviceable, today: string): DueInfo {
   };
 }
 
-/** Most urgent first. Ties keep a stable, name-independent order by due date. */
-export function compareByUrgency(a: DueInfo, b: DueInfo): number {
+/**
+ * Most urgent first. Ties keep a stable, name-independent order by due date.
+ *
+ * Takes only the field it reads, so anything carrying a day count can be
+ * ordered by it — the digest sorts its own notices this way rather than
+ * carrying a whole `DueInfo` around just to be sortable.
+ */
+export function compareByUrgency(
+  a: Pick<DueInfo, "daysUntilDue">,
+  b: Pick<DueInfo, "daysUntilDue">,
+): number {
   return a.daysUntilDue - b.daysUntilDue;
 }

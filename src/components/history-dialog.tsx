@@ -10,8 +10,8 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Skeleton } from "~/components/ui/skeleton";
-import { useFormatDate } from "~/lib/format-date";
 import { useTRPC } from "~/lib/trpc/client";
+import { useFormatDate } from "~/lib/use-format-date";
 
 export function HistoryDialog({
   open,

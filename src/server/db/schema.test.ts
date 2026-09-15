@@ -28,7 +28,7 @@ describe("migrations match the schema", () => {
   it("declares every table the schema defines", () => {
     // Guards the filter above: if the schema stops exporting tables under the
     // names we expect, an empty list would make every case below vacuous.
-    expect(TABLES.length).toBe(7);
+    expect(TABLES.length).toBe(9);
   });
 
   it.each(TABLES)("has every column of %s", async (_name, table) => {
@@ -111,6 +111,76 @@ describe("referential behaviour", () => {
     expect(await db.select().from(schema.consumableReplacements)).toEqual([]);
   });
 
+  it("refuses a second notice for the same consumable, kind and due date", async () => {
+    const userId = await createUser(db, "alice");
+    const [consumable] = await db
+      .insert(schema.consumables)
+      .values({
+        userId,
+        type: "sediment",
+        name: "Sediment PP",
+        intervalValue: 6,
+        intervalUnit: "months",
+        lastChangedOn: "2026-01-10",
+      })
+      .returning({ id: schema.consumables.id });
+    const notice = {
+      userId,
+      consumableId: consumable?.id ?? "",
+      kind: "warning" as const,
+      dueOn: "2026-07-10",
+    };
+
+    await db.insert(schema.notificationLog).values(notice);
+
+    // `PRAGMA table_info` above sees columns but not indexes, and this index is
+    // the entire trigger rule: it is what stops a second run of the same day
+    // from emailing somebody twice. Worth asserting directly.
+    //
+    // Drizzle wraps the driver error, so the constraint name is on the cause
+    // rather than the message it throws.
+    const duplicate = await db
+      .insert(schema.notificationLog)
+      .values(notice)
+      .then(
+        () => null,
+        (error: Error) => error,
+      );
+    expect(String(duplicate?.cause)).toMatch(/UNIQUE constraint failed/i);
+
+    // The other kind, and the next cycle's due date, are both still free.
+    await db.insert(schema.notificationLog).values([
+      { ...notice, kind: "due" },
+      { ...notice, dueOn: "2027-01-10" },
+    ]);
+    expect(await db.select().from(schema.notificationLog)).toHaveLength(3);
+  });
+
+  it("cascades the notification log when a consumable is deleted", async () => {
+    const userId = await createUser(db, "alice");
+    const [consumable] = await db
+      .insert(schema.consumables)
+      .values({
+        userId,
+        type: "sediment",
+        name: "Sediment PP",
+        intervalValue: 6,
+        intervalUnit: "months",
+        lastChangedOn: "2026-01-10",
+      })
+      .returning({ id: schema.consumables.id });
+    await db.insert(schema.notificationLog).values({
+      userId,
+      consumableId: consumable?.id ?? "",
+      kind: "due",
+      dueOn: "2026-07-10",
+    });
+
+    await db.delete(schema.consumables);
+
+    expect(await db.select().from(schema.notificationLog)).toEqual([]);
+  });
+
   it("cascades everything a user owns when the user is deleted", async () => {
     const userId = await createUser(db, "alice");
     await db.insert(schema.systems).values({
@@ -128,10 +198,13 @@ describe("referential behaviour", () => {
       lastChangedOn: "2026-01-10",
     });
 
+    await db.insert(schema.userSettings).values({ userId, locale: "uk" });
+
     await db.delete(schema.user);
 
     expect(await db.select().from(schema.systems)).toEqual([]);
     expect(await db.select().from(schema.consumables)).toEqual([]);
+    expect(await db.select().from(schema.userSettings)).toEqual([]);
   });
 });
 

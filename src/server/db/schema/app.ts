@@ -1,6 +1,14 @@
 import { relations } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
+import type { Locale } from "~/i18n/locale";
 import type { ConsumableType, IntervalUnit } from "~/lib/consumables";
+import type { NotificationKind } from "~/lib/notifications";
 import { newId } from "~/server/db/id";
 import { user } from "~/server/db/schema/auth";
 
@@ -89,6 +97,66 @@ export const consumableReplacements = sqliteTable(
   ],
 );
 
+/**
+ * Two ways of knowing a person's language, for two different callers.
+ *
+ * The cookie (`~/i18n/locale`) is what the next request carries and stays
+ * authoritative for rendering. This row is what code with no request at all
+ * reads — the daily digest, which has to pick a language hours after anyone
+ * last had a browser open. `setLocale` writes both; a missing row simply means
+ * `DEFAULT_LOCALE`.
+ */
+export const userSettings = sqliteTable("user_settings", {
+  // One row per user, so the user id *is* the key: there is nothing else to
+  // address a settings row by, and a surrogate would only invite a second one.
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  locale: text("locale").$type<Locale>().notNull(),
+  ...timestamps,
+});
+
+/**
+ * One row per notice actually sent, and the unique index *is* the trigger rule:
+ * a warning and a due notice each fire on the first run that crosses their
+ * threshold, and never again for that `due_on`.
+ *
+ * That single constraint buys four things at once. A run that fails or is
+ * skipped catches up the next day rather than losing the reminder forever. A
+ * cartridge that was already overdue when it was added gets exactly one notice.
+ * Nobody is nagged daily. And replacing the cartridge moves `due_on`, which
+ * arms the next cycle with no cleanup job anywhere.
+ */
+export const notificationLog = sqliteTable(
+  "notification_log",
+  {
+    id: text("id").primaryKey().$defaultFn(newId),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    consumableId: text("consumable_id")
+      .notNull()
+      .references(() => consumables.id, { onDelete: "cascade" }),
+    // A stable key, never display text — see `~/lib/notifications`.
+    kind: text("kind").$type<NotificationKind>().notNull(),
+    // The date the notice was *about*, not when it went out. That is what makes
+    // the row usable as an idempotency key across a retry, and what lets the
+    // next replacement cycle re-arm on its own.
+    dueOn: text("due_on").notNull(),
+    sentAt: integer("sent_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("notification_log_once_idx").on(
+      table.consumableId,
+      table.kind,
+      table.dueOn,
+    ),
+    index("notification_log_user_idx").on(table.userId, table.sentAt),
+  ],
+);
+
 export const systemsRelations = relations(systems, ({ many, one }) => ({
   consumables: many(consumables),
   user: one(user, { fields: [systems.userId], references: [user.id] }),
@@ -112,6 +180,26 @@ export const consumableReplacementsRelations = relations(
   }),
 );
 
+export const userSettingsRelations = relations(userSettings, ({ one }) => ({
+  user: one(user, { fields: [userSettings.userId], references: [user.id] }),
+}));
+
+export const notificationLogRelations = relations(
+  notificationLog,
+  ({ one }) => ({
+    consumable: one(consumables, {
+      fields: [notificationLog.consumableId],
+      references: [consumables.id],
+    }),
+    user: one(user, {
+      fields: [notificationLog.userId],
+      references: [user.id],
+    }),
+  }),
+);
+
 export type System = typeof systems.$inferSelect;
 export type Consumable = typeof consumables.$inferSelect;
 export type ConsumableReplacement = typeof consumableReplacements.$inferSelect;
+export type UserSettings = typeof userSettings.$inferSelect;
+export type NotificationLogEntry = typeof notificationLog.$inferSelect;

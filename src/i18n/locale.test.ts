@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_LOCALE,
+  hasLocaleCookie,
   isLocale,
   LOCALE_COOKIE,
   localeFromCookieHeader,
   negotiateLocale,
+  negotiateLocaleIfSupported,
 } from "~/i18n/locale";
 
 /**
@@ -74,5 +76,33 @@ describe("localeFromCookieHeader", () => {
     expect(localeFromCookieHeader("theme=dark")).toBe(DEFAULT_LOCALE);
     expect(localeFromCookieHeader(`${LOCALE_COOKIE}=de`)).toBe(DEFAULT_LOCALE);
     expect(localeFromCookieHeader(`${LOCALE_COOKIE}=`)).toBe(DEFAULT_LOCALE);
+  });
+});
+
+describe("hasLocaleCookie", () => {
+  it("separates a real choice from a fallback", () => {
+    // `localeFromCookieHeader` answers "en" for all four of these. The digest
+    // needs to know which of them means somebody actually picked English.
+    expect(hasLocaleCookie(`${LOCALE_COOKIE}=en`)).toBe(true);
+    expect(hasLocaleCookie(`theme=dark; ${LOCALE_COOKIE}=uk`)).toBe(true);
+    expect(hasLocaleCookie("theme=dark")).toBe(false);
+    expect(hasLocaleCookie(null)).toBe(false);
+  });
+
+  it("does not count a cookie holding a language we do not have", () => {
+    expect(hasLocaleCookie(`${LOCALE_COOKIE}=de`)).toBe(false);
+    expect(hasLocaleCookie(`${LOCALE_COOKIE}=`)).toBe(false);
+  });
+});
+
+describe("negotiateLocaleIfSupported", () => {
+  it("says so when the header names nothing we have", () => {
+    // The distinction `negotiateLocale` throws away: anything recording a
+    // preference needs to know it was told nothing, because a default written
+    // to the database is indistinguishable from a choice afterwards.
+    expect(negotiateLocaleIfSupported("uk-UA,en;q=0.5")).toBe("uk");
+    expect(negotiateLocaleIfSupported("de-DE,fr;q=0.9")).toBeNull();
+    expect(negotiateLocaleIfSupported(null)).toBeNull();
+    expect(negotiateLocaleIfSupported("")).toBeNull();
   });
 });

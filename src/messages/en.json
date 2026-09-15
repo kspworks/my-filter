@@ -207,6 +207,23 @@
       "PASSWORD_TOO_LONG": "That password is too long."
     }
   },
+  "email": {
+    "digest": {
+      "subject": {
+        "due": "{count, plural, one {# cartridge needs replacing} other {# cartridges need replacing}}",
+        "warning": "{count, plural, one {# cartridge is due for replacement soon} other {# cartridges are due for replacement soon}}"
+      },
+      "heading": {
+        "due": "Replace now",
+        "warning": "Coming up"
+      },
+      "intro": "Today’s check of your water filters.",
+      "item": "«{name}» — {due}, scheduled for {date}",
+      "itemWithSystem": "«{name}» in «{system}» — {due}, scheduled for {date}",
+      "openApp": "Open My Filter",
+      "footer": "You are getting this because you track filter cartridges in My Filter."
+    }
+  },
   "pageTitles": {
     "dashboard": "My Filter",
     "systems": "Systems · My Filter",

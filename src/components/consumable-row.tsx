@@ -38,11 +38,11 @@ import {
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { dueInfo } from "~/lib/due-date";
-import { useFormatDate } from "~/lib/format-date";
 import { useLabels } from "~/lib/labels";
 import { useTRPC } from "~/lib/trpc/client";
 import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
+import { useFormatDate } from "~/lib/use-format-date";
 
 export type ConsumableListItem = ConsumableDraft & {
   systemManufacturer: string | null;

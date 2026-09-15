@@ -3,7 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { setLocale } from "~/i18n/set-locale";
 import { signUp } from "~/lib/auth-client";
 import { useAuthErrorMessage } from "~/lib/auth-errors";
 
@@ -24,6 +25,7 @@ export function RegisterForm() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations("auth");
+  const locale = useLocale();
   const authErrorMessage = useAuthErrorMessage();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -52,6 +54,12 @@ export function RegisterForm() {
       setPending(false);
       return;
     }
+
+    // `nextCookies()` has already set the session cookie by the time `signUp`
+    // resolves, so this runs authenticated and is the first moment the language
+    // can be recorded for the daily digest. Otherwise a new account would not
+    // have one until they happened to use the language switcher.
+    await setLocale(locale);
 
     queryClient.clear();
     router.push("/");

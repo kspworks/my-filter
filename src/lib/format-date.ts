@@ -1,15 +1,18 @@
-"use client";
-
 import { format, parseISO } from "date-fns";
 import type { Locale as DateFnsLocale } from "date-fns/locale";
 import { enGB, uk } from "date-fns/locale";
-import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "~/i18n/locale";
 
 /**
  * The single place dates and date-ish phrases turn into display text. Nothing
  * else in the UI formats a date itself — this is the module `AGENTS.md` names,
- * and it is now the module that takes the locale.
+ * and it is the module that takes the locale.
+ *
+ * Deliberately *not* `"use client"`: the daily digest renders the same dates
+ * with no request and no React at all, and a client boundary would hand it
+ * reference proxies instead of functions. The hooks that bind these to the
+ * reader's language live in `~/lib/use-format-date`, the same way `use-today`
+ * sits beside `due-date`.
  */
 
 const DATE_FNS_LOCALES = {
@@ -24,24 +27,19 @@ export function formatDate(dateString: string, locale: Locale): string {
   });
 }
 
-/** `formatDate` bound to the reader's language. */
-export function useFormatDate(): (dateString: string) => string {
-  const locale = useLocale();
-  return (dateString) => formatDate(dateString, locale);
-}
+export type DuePhraseKey = "today" | "overdue" | "upcoming";
 
 /**
- * "due today" / "3 days overdue" / "in 5 days". Lives in the message catalogue
- * rather than here because every branch needs the target language's plural
- * rules, not English's.
+ * Which `duePhrase.*` message a day count needs, and the count to give it.
+ *
+ * Only the choice lives here; the wording stays in the catalogue, because every
+ * branch needs the target language's plural rules rather than English's.
  */
-export function useDuePhrase(): (daysUntilDue: number) => string {
-  const t = useTranslations("duePhrase");
-
-  return (daysUntilDue) => {
-    if (daysUntilDue === 0) return t("today");
-    if (daysUntilDue < 0)
-      return t("overdue", { count: Math.abs(daysUntilDue) });
-    return t("upcoming", { count: daysUntilDue });
-  };
+export function duePhraseMessage(daysUntilDue: number): {
+  key: DuePhraseKey;
+  count: number;
+} {
+  if (daysUntilDue === 0) return { key: "today", count: 0 };
+  if (daysUntilDue < 0) return { key: "overdue", count: -daysUntilDue };
+  return { key: "upcoming", count: daysUntilDue };
 }

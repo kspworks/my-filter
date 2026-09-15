@@ -4,6 +4,7 @@ import { loadMessages } from "~/i18n/messages";
 import { KNOWN_CODES } from "~/lib/auth-errors";
 import { CONSUMABLE_TYPES, INTERVAL_UNITS } from "~/lib/consumables";
 import type { DueStatus } from "~/lib/due-date";
+import { NOTIFICATION_KINDS } from "~/lib/notifications";
 import { PRESET_ITEM_KEYS, PRESETS } from "~/lib/presets";
 
 /**
@@ -45,6 +46,13 @@ function requiredKeys(): string[] {
     ]),
     ...PRESET_ITEM_KEYS.map((key) => `presets.items.${key}`),
     ...KNOWN_CODES.map((code) => `auth.errors.${code}`),
+    // The digest picks a subject and a section heading per kind, so adding a
+    // third kind without translating it fails here rather than putting a raw
+    // key in somebody's inbox.
+    ...NOTIFICATION_KINDS.flatMap((kind) => [
+      `email.digest.subject.${kind}`,
+      `email.digest.heading.${kind}`,
+    ]),
   ];
 }
 

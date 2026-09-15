@@ -8,6 +8,7 @@ import {
   waitFor,
 } from "~/test-utils/render";
 import { routerMock } from "~/test-utils/stubs/next-navigation";
+import { setLocale } from "~/test-utils/stubs/set-locale";
 
 const signUp = vi.hoisted(() => ({ email: vi.fn() }));
 vi.mock("~/lib/auth-client", () => ({ signUp }));
@@ -17,6 +18,7 @@ let app: TestApp;
 beforeEach(async () => {
   app = await setupApp();
   signUp.email.mockReset();
+  vi.mocked(setLocale).mockClear();
 });
 
 afterEach(() => app.close());
@@ -63,9 +65,30 @@ describe("a successful registration", () => {
     await waitFor(() => expect(clear).toHaveBeenCalled());
     expect(routerMock.push).toHaveBeenCalledWith("/");
   });
+
+  it("records the language the account was created in", async () => {
+    signUp.email.mockResolvedValue({ error: null });
+    app.render(<RegisterForm />);
+
+    await fill();
+
+    // Otherwise a new account has no language on record at all, and the daily
+    // digest falls back to English until they use the language switcher.
+    await waitFor(() => expect(setLocale).toHaveBeenCalledWith("en"));
+  });
 });
 
 describe("a rejected registration", () => {
+  it("records no language, because there is no account to record it for", async () => {
+    signUp.email.mockResolvedValue({ error: { code: "USER_ALREADY_EXISTS" } });
+    app.render(<RegisterForm />);
+
+    await fill();
+
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(setLocale).not.toHaveBeenCalled();
+  });
+
   it("translates a known code", async () => {
     signUp.email.mockResolvedValue({ error: { code: "PASSWORD_TOO_LONG" } });
     app.render(<RegisterForm />);

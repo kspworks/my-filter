@@ -62,13 +62,29 @@ The active locale lives in a **cookie**, not the URL. There is no `[locale]` seg
 `src/i18n/set-locale.ts` and calls `router.refresh()`; cookies cannot be set while a Server
 Component renders.
 
+The cookie is per-browser, so it is invisible to anything running without a request — which
+means the daily digest. `setLocale` therefore *also* writes `user_settings.locale`, and so
+does the sign-in hook in `src/server/auth.ts`. The cookie stays authoritative for rendering;
+the row exists only so a background job knows what language to write in. Two writers, and
+the difference between them is load-bearing: `saveUserLocale` records a **choice** and
+overwrites, `defaultUserLocale` records a **guess** and only fills an empty row. A request
+that says nothing writes nothing at all — a default written down is indistinguishable from a
+choice afterwards, and would block every later, better signal.
+
+The jsdom project aliases `~/i18n/set-locale` to a stub for two reasons now: the real
+module's `cookies()` throws outside a request scope, *and* it reaches `~/server/db`, which
+would drag `src/env.ts` into every component test that renders the language switcher or the
+register form.
+
 Display text lives in exactly three places:
 
 - **`~/lib/labels.ts`** — enum-like values (`type`, `intervalUnit`, `DueStatus`) are stored
   as stable keys and rendered through `useLabels()`.
 - **`~/lib/format-date.ts`** — the only module that formats a date. No ad-hoc
   `toLocaleDateString`, and never localize the `yyyy-MM-dd` pattern in `~/lib/due-date.ts`:
-  that one is machine serialization.
+  that one is machine serialization. It is pure and has no `"use client"`, because the digest
+  formats the same dates with no React anywhere; the hooks that bind it to the reader's
+  language live in `~/lib/use-format-date`, the way `use-today` sits beside `due-date`.
 - **the catalogues** — anything else a person reads.
 
 **Never build a plural by hand.** Ukrainian has four categories to English's two, and its
@@ -87,6 +103,34 @@ Keep display text out of the database. `consumables.name` is user data: `applyPr
 resolves a preset's cartridge name in the caller's language *once*, at creation, and never
 re-translates it. The replacement log stores no label at all — which entry is the
 installation, the most recent or a plain replacement is derived from its position.
+
+## Notifications
+
+A daily email digest of cartridges needing replacement: a warning fourteen days out and a
+notice on the day itself, combined into one message when both apply — `src/server/mail`
+(transport) and `src/server/notifications` (the job), behind a Vercel cron at `0 9 * * *`.
+
+**The sent-log is the mechanism, not a record of one.** `notification_log` has a unique index
+on `(consumable_id, kind, due_on)`, and `run.ts` *claims* rows with
+`onConflictDoNothing().returning()` — a row that comes back is a notice nobody has sent.
+Never re-derive "already sent" from dates: matching an exact day instead loses a reminder
+permanently whenever a run fails, and says nothing about cartridges that were already
+overdue. Claim, then send, then delete the claim if the send throws, so a failure is a
+day's delay rather than a lost or duplicated email.
+
+**The cron is the one place the server decides what "today" is.** Everywhere else that is
+the viewer's own (`~/lib/use-today`), deliberately, because the server's timezone is not
+theirs — but a background job has no viewer. `todayInTimeZone(DIGEST_TIME_ZONE, …)` resolves
+it in `Europe/Kyiv`, so the schedule drifting an hour across DST never changes *which*
+cartridges are reported. This is a considered inversion of the rule above, not an oversight.
+
+`MAIL_TRANSPORT` defaults to `"log"`, so `next build`, CI and a fresh clone all work with no
+mail secrets at all; `readMailConfig` validates only the transport actually selected, and
+`src/app/api/cron/digest/route.ts` stays a four-line injector so `cron.ts` can be driven by a
+real `Request` without importing the database singleton. Adding a provider is one file
+implementing `MailTransport` and one arm in `create-transport`.
+
+Never filter recipients on `user.emailVerified` — nothing in this app ever sets it true.
 
 ## Theme
 

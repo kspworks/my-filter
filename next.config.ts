@@ -8,8 +8,11 @@ import "./src/env";
 const nextConfig: NextConfig = {
   reactCompiler: true,
   // The libSQL driver has a native component; it must stay a real Node require
-  // instead of being bundled into the server output.
-  serverExternalPackages: ["@libsql/client", "libsql"],
+  // instead of being bundled into the server output. nodemailer is here for a
+  // related reason: it is CommonJS, resolves parts of itself with computed
+  // `require`s, and reads its own package.json at runtime for the version
+  // banner — none of which survive bundling.
+  serverExternalPackages: ["@libsql/client", "libsql", "nodemailer"],
 };
 
 // Picks up `src/i18n/request.ts` by convention.

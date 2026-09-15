@@ -2,8 +2,8 @@
 
 import { Badge } from "~/components/ui/badge";
 import type { DueStatus } from "~/lib/due-date";
-import { useDuePhrase } from "~/lib/format-date";
 import { useLabels } from "~/lib/labels";
+import { useDuePhrase } from "~/lib/use-format-date";
 import { cn } from "~/lib/utils";
 
 const STATUS_CLASSES: Record<DueStatus, string> = {

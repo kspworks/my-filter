@@ -33,6 +33,7 @@ const EVERY_ARGUMENT = {
   date: "1 Jan 2026",
   interval: "6 months",
   system: "Aquafilter RO-6",
+  due: "in 5 days",
 };
 
 describe("message catalogues", () => {
@@ -167,6 +168,70 @@ describe("Ukrainian plural rules", () => {
     expect(t("common.itemCount", { count: 1 })).toBe("1 картридж");
     expect(t("common.itemCount", { count: 3 })).toBe("3 картриджі");
     expect(t("common.itemCount", { count: 5 })).toBe("5 картриджів");
+  });
+});
+
+describe("digest emails", () => {
+  async function translator(locale: Locale) {
+    return createTranslator({ locale, messages: await loadMessages(locale) });
+  }
+
+  it("declines the Ukrainian subject across one / few / many", async () => {
+    const t = await translator("uk");
+    const subject = (count: number) => t("email.digest.subject.due", { count });
+
+    expect(subject(1)).toBe("1 картридж потребує заміни");
+    expect(subject(3)).toBe("3 картриджі потребують заміни");
+    expect(subject(5)).toBe("5 картриджів потребують заміни");
+    // A subject line is the one string nobody can skim past, and 21 is the
+    // case English-shaped logic renders as "21 картриджів".
+    expect(subject(21)).toBe("21 картридж потребує заміни");
+  });
+
+  it("declines the Ukrainian warning subject too", async () => {
+    const t = await translator("uk");
+
+    expect(t("email.digest.subject.warning", { count: 1 })).toBe(
+      "1 картридж скоро потребуватиме заміни",
+    );
+    expect(t("email.digest.subject.warning", { count: 5 })).toBe(
+      "5 картриджів скоро потребуватимуть заміни",
+    );
+  });
+
+  it("builds a whole Ukrainian line, rather than gluing fragments", async () => {
+    const t = await translator("uk");
+
+    // One parameterized message: a translator can move «{due}» ahead of the
+    // name, and the guillemets keep the cartridge name from having to decline.
+    expect(
+      t("email.digest.itemWithSystem", {
+        name: "Осадовий PP",
+        system: "Aquafilter RO-6",
+        due: t("duePhrase.upcoming", { count: 5 }),
+        date: "19 вер. 2026",
+      }),
+    ).toBe(
+      "«Осадовий PP» у системі «Aquafilter RO-6» — через 5 днів, за графіком 19 вер. 2026",
+    );
+  });
+
+  it("reads naturally in English at one and many", async () => {
+    const t = await translator("en");
+
+    expect(t("email.digest.subject.due", { count: 1 })).toBe(
+      "1 cartridge needs replacing",
+    );
+    expect(t("email.digest.subject.due", { count: 3 })).toBe(
+      "3 cartridges need replacing",
+    );
+    expect(
+      t("email.digest.item", {
+        name: "Sediment PP",
+        due: t("duePhrase.today"),
+        date: "14 Sep 2026",
+      }),
+    ).toBe("«Sediment PP» — due today, scheduled for 14 Sep 2026");
   });
 });
 

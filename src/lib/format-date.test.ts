@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDate } from "~/lib/format-date";
+import { duePhraseMessage, formatDate } from "~/lib/format-date";
 
 /**
  * The only module allowed to format a date for a person. The `yyyy-MM-dd`
@@ -24,5 +24,16 @@ describe("formatDate", () => {
     expect(formatDate("2026-01-01", "en")).toBe("1 Jan 2026");
     expect(formatDate("2026-03-01", "en")).toBe("1 Mar 2026");
     expect(formatDate("2026-12-31", "en")).toBe("31 Dec 2026");
+  });
+});
+
+describe("duePhraseMessage", () => {
+  it("picks the message a day count needs, and the count to give it", () => {
+    expect(duePhraseMessage(0)).toEqual({ key: "today", count: 0 });
+    expect(duePhraseMessage(5)).toEqual({ key: "upcoming", count: 5 });
+    // "3 days overdue" counts up from zero, so the sign is dropped here rather
+    // than in every caller — and never inside a message, where the plural rule
+    // would then be reasoning about a negative.
+    expect(duePhraseMessage(-3)).toEqual({ key: "overdue", count: 3 });
   });
 });
