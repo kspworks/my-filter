@@ -46,6 +46,9 @@ recreates that user, which also signs out any open session for it.
 | `pnpm db:migrate` | Apply migrations |
 | `pnpm db:studio` | Drizzle Studio |
 | `pnpm db:seed` | Reset and seed the demo account |
+| `pnpm db:backfill-locales` | Give every existing account a language, once |
+| `pnpm db:backup` | Write a restorable SQL dump into `./data/` |
+| `pnpm db:delete-user` | Delete one account and all of its data |
 
 ## How it is put together
 
@@ -93,6 +96,40 @@ A file-backed SQLite cannot be the production store on serverless hosts (the fil
 ephemeral), which is why the app talks to libSQL from the start. To deploy on Vercel:
 create a Turso database, set `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`
 and `BETTER_AUTH_URL`, and run `pnpm db:migrate` against the remote URL.
+
+### Backups
+
+`pnpm db:backup` dumps whatever `DATABASE_URL` points at, so taking a copy of production is
+a matter of running it locally with production credentials:
+
+```bash
+DATABASE_URL="libsql://<db>.turso.io" DATABASE_AUTH_TOKEN="<token>" pnpm db:backup
+```
+
+It writes `data/<database>-<date>.sql` — a second run the same day lands beside the first
+rather than over it — and prints a row count per table. `/data` is gitignored, which matters:
+the dump contains better-auth password hashes and live session tokens.
+
+It is a plain SQL script because nothing else is portable here. Turso has no binary export
+over the client library, and depending on the `turso` CLI or a `sqlite3` binary would mean a
+backup you cannot take from a fresh clone. Restoring does want one of those, though:
+
+```bash
+turso db shell <database> < data/my-filter-2026-09-15.sql   # or
+sqlite3 restored.db < data/my-filter-2026-09-15.sql
+```
+
+The dump disables foreign keys before `BEGIN` — the tables come out in `sqlite_master` order,
+which knows nothing about which references which — and keeps the `__drizzle_migrations` table,
+so a restored copy does not try to re-apply every migration.
+
+### Deleting an account
+
+`pnpm db:delete-user <id or email>` prints what it would remove and stops. `--confirm` makes
+it real; against a remote `DATABASE_URL` it *also* asks for the account's email to be typed
+back, and refuses outright with no terminal to ask in unless `--yes` says that is deliberate.
+`NODE_ENV` is no help there — a script run from a laptop against Turso is "development" by
+every measure Node has — so a non-`file:` URL is what stands in for production.
 
 ## Language and theme
 

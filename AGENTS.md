@@ -144,6 +144,34 @@ not a cookie: reading a cookie in the root layout opts the whole app out of prer
 
 <!-- END:project-conventions -->
 
+## Operational scripts
+
+`scripts/` holds the things run by hand: `db:seed`, `db:backfill-locales`, `db:backup` and
+`db:delete-user`. They are `tsx` entry points, so no top-level `await` — tsx compiles to CJS
+here — and the logic they need lives under `src/` instead, where Vitest can reach it
+(`include: ["src/**/*.test.ts"]`). Neither `~/server/db/dump.ts` nor
+`~/server/db/delete-user.ts` imports the `db` singleton: they take a handle as a parameter,
+so `makeTestDb()` can drive them.
+
+**A non-`file:` `DATABASE_URL` is what "production" means here.** `NODE_ENV` cannot tell:
+a script run from a laptop against Turso is `"development"` by every measure Node has, and
+the README already says the URL is the only thing that changes between environments.
+`describeTarget` in `~/server/db/target.ts` is the one place that decides, and it also strips
+credentials out of the URL before anything prints or writes it.
+
+`deleteUserEverywhere` deletes each user-scoped table **explicitly**, children first, rather
+than leaning on the `ON DELETE cascade` every one of them declares (which is what
+`scripts/seed.ts` does). SQLite only enforces foreign keys when `PRAGMA foreign_keys=ON` —
+a per-connection setting this code does not own — and a cascade reports nothing about what it
+took, while the CLI has to show a footprint before it asks. `verification` is left alone on
+purpose: no `user_id`, and nothing in this app writes to it.
+
+The backup is a SQL dump rather than a file copy because there is no portable way to get a
+binary one: `@libsql/client` cannot copy a Turso database, and `turso`/`sqlite3` are not
+dependencies. `RESTORE_PREAMBLE` is exported separately from the dump body for a reason —
+SQLite ignores `PRAGMA foreign_keys` inside a transaction, so it has to be written *above*
+the `BEGIN` the file wraps everything else in.
+
 ## Tests
 
 The suite exists to be run **after a dependency upgrade** and believed, so it favours

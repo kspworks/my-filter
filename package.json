@@ -22,7 +22,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
-    "db:backfill-locales": "tsx scripts/backfill-locales.ts"
+    "db:backfill-locales": "tsx scripts/backfill-locales.ts",
+    "db:backup": "tsx scripts/backup-db.ts",
+    "db:delete-user": "tsx scripts/delete-user.ts"
   },
   "dependencies": {
     "@libsql/client": "0.18.0",
