@@ -25,3 +25,22 @@ test("keeps the login page reachable", async ({ page }) => {
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(page.getByRole("link", { name: "Create one" })).toBeVisible();
 });
+
+/**
+ * `icon.svg`, `favicon.ico` and `apple-icon.png` are metadata-file conventions:
+ * Next finds them by name under `src/app` and writes the `<link>` tags itself,
+ * so nothing in this codebase references them. A rename, or a change to how the
+ * convention is emitted on a future upgrade, would surface only as a tab that
+ * quietly lost its icon. This is what would notice.
+ */
+test("links the app icons", async ({ page }) => {
+  await page.goto("/login");
+
+  await expect(
+    page.locator('link[rel="icon"][type="image/svg+xml"]'),
+  ).toHaveCount(1);
+  await expect(page.locator('link[rel="icon"][href*="favicon"]')).toHaveCount(
+    1,
+  );
+  await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
+});

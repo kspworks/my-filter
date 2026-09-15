@@ -36,7 +36,7 @@ export function AppNav({ userName }: { userName: string }) {
     <header className="border-b border-border bg-card">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-6 py-3">
         <Link href="/" className="flex items-center gap-2 font-semibold">
-          <Droplets className="size-5 text-primary" aria-hidden />
+          <Droplets className="size-5 text-brand" aria-hidden />
           {tApp("name")}
         </Link>
 

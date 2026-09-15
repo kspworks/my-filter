@@ -27,7 +27,7 @@ export default async function AuthLayout({
       </div>
       <div className="w-full max-w-sm">
         <div className="mb-8 flex items-center justify-center gap-2">
-          <Droplets className="size-6 text-primary" aria-hidden />
+          <Droplets className="size-6 text-brand" aria-hidden />
           <span className="text-lg font-semibold tracking-tight">
             {t("name")}
           </span>
