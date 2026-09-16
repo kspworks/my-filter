@@ -33,7 +33,7 @@ describe("English", () => {
 
     app.close();
     await renderBadge("en", 1, "due_soon");
-    expect(screen.getByText("in 1 day")).toBeInTheDocument();
+    expect(screen.getByText("tomorrow")).toBeInTheDocument();
 
     app.close();
     await renderBadge("en", -3, "overdue");
@@ -51,7 +51,7 @@ describe("English", () => {
 
 describe("Ukrainian", () => {
   it.each([
-    [1, "через 1 день"],
+    [1, "завтра"],
     [3, "через 3 дні"],
     [5, "через 5 днів"],
     [11, "через 11 днів"],

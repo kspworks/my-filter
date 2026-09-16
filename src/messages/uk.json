@@ -59,7 +59,7 @@
   "duePhrase": {
     "today": "заміна сьогодні",
     "overdue": "{count, plural, one {прострочено на # день} few {прострочено на # дні} many {прострочено на # днів} other {прострочено на # днів}}",
-    "upcoming": "{count, plural, one {через # день} few {через # дні} many {через # днів} other {через # днів}}"
+    "upcoming": "{count, plural, =1 {завтра} one {через # день} few {через # дні} many {через # днів} other {через # днів}}"
   },
   "dashboard": {
     "title": "Огляд",

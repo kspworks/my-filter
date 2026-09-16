@@ -95,7 +95,7 @@ describe("the body", () => {
     ]);
 
     expect(message.text).toContain("1 day overdue");
-    expect(message.text).toContain("in 1 day");
+    expect(message.text).toContain("tomorrow");
   });
 
   it("links back to the app in both parts", async () => {

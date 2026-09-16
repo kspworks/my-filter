@@ -59,7 +59,7 @@
   "duePhrase": {
     "today": "due today",
     "overdue": "{count, plural, one {# day overdue} other {# days overdue}}",
-    "upcoming": "{count, plural, one {in # day} other {in # days}}"
+    "upcoming": "{count, plural, =1 {tomorrow} one {in # day} other {in # days}}"
   },
   "dashboard": {
     "title": "Dashboard",

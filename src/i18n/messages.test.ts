@@ -121,7 +121,8 @@ describe("Ukrainian plural rules", () => {
     expect(t("duePhrase.overdue", { count: 1 })).toBe("прострочено на 1 день");
     expect(t("duePhrase.overdue", { count: 62 })).toBe("прострочено на 62 дні");
     expect(t("duePhrase.upcoming", { count: 5 })).toBe("через 5 днів");
-    expect(t("duePhrase.upcoming", { count: 1 })).toBe("через 1 день");
+    expect(t("duePhrase.upcoming", { count: 1 })).toBe("завтра");
+    expect(t("duePhrase.upcoming", { count: 21 })).toBe("через 21 день");
   });
 
   it("agrees the determiner with the interval count", async () => {
@@ -246,6 +247,7 @@ describe("English plurals", () => {
     expect(t("interval.days", { count: 3 })).toBe("3 days");
     expect(t("duePhrase.overdue", { count: 1 })).toBe("1 day overdue");
     expect(t("duePhrase.upcoming", { count: 5 })).toBe("in 5 days");
+    expect(t("duePhrase.upcoming", { count: 1 })).toBe("tomorrow");
     expect(t("common.itemCount", { count: 1 })).toBe("1 item");
   });
 });
