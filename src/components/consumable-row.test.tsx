@@ -118,6 +118,26 @@ describe("marking a cartridge replaced", () => {
     ).toHaveLength(2);
   });
 
+  it("cannot be pressed twice while the write is running", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const { consumable } = await aRow();
+
+    const release = app.holdMutations();
+    await user.click(screen.getByRole("button", { name: /mark replaced/i }));
+
+    const button = screen.getByRole("button", { name: /mark replaced/i });
+    await waitFor(() => expect(button).toHaveAttribute("aria-busy", "true"));
+    expect(button).toBeDisabled();
+
+    release();
+    expect(
+      await screen.findByText("«Sediment PP» replaced on 14 Sep 2026."),
+    ).toBeInTheDocument();
+    expect(
+      await app.caller.consumables.history({ id: consumable.id }),
+    ).toHaveLength(2);
+  });
+
   it("puts the schedule back when the undo is taken", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const { consumable } = await aRow();

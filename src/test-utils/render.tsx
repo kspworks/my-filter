@@ -1,6 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type RenderResult, render } from "@testing-library/react";
-import { createTRPCClient, unstable_localLink } from "@trpc/client";
+import {
+  createTRPCClient,
+  type TRPCLink,
+  unstable_localLink,
+} from "@trpc/client";
+import { observable } from "@trpc/server/observable";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
 import { ThemeProvider } from "~/components/theme-provider";
@@ -38,6 +43,12 @@ export type TestApp = {
   /** Seed fixtures through this — ids must be real cuid2s to satisfy `zId`. */
   caller: Awaited<ReturnType<typeof callerFor>>;
   render: (ui: ReactNode) => RenderResult;
+  /**
+   * Parks every mutation sent after this call until the returned `release` is
+   * called, so a test can see a button while its request is still running.
+   * The request itself still goes through the real router once released.
+   */
+  holdMutations: () => () => void;
   close: () => void;
 };
 
@@ -48,8 +59,29 @@ export async function setupApp({
   const userId = await createUser(db, "tester");
   const ctx = await makeContext(db, userId, locale);
 
+  // The local link resolves on a microtask, so without a gate no render ever
+  // happens while a mutation is pending.
+  let gate: Promise<void> | undefined;
+  const holdLink: TRPCLink<AppRouter> =
+    () =>
+    ({ op, next }) =>
+      observable((observer) => {
+        let unsubscribe: (() => void) | undefined;
+        let cancelled = false;
+        const held = op.type === "mutation" ? gate : undefined;
+        void Promise.resolve(held).then(() => {
+          if (cancelled) return;
+          unsubscribe = next(op).subscribe(observer).unsubscribe;
+        });
+        return () => {
+          cancelled = true;
+          unsubscribe?.();
+        };
+      });
+
   const trpcClient = createTRPCClient<AppRouter>({
     links: [
+      holdLink,
       unstable_localLink({
         router: appRouter,
         createContext: async () => ctx,
@@ -73,6 +105,16 @@ export async function setupApp({
     queryClient,
     caller: await callerFor(db, userId, locale),
     close,
+    holdMutations: () => {
+      let release!: () => void;
+      gate = new Promise((resolve) => {
+        release = resolve;
+      });
+      return () => {
+        gate = undefined;
+        release();
+      };
+    },
     render: (ui: ReactNode) =>
       render(
         <ThemeProvider>

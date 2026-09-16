@@ -29,8 +29,8 @@ export default defineConfig({
       // number. What is left uncovered is mostly the Next-runtime wiring
       // (`i18n/request.ts`, `i18n/set-locale.ts`, `lib/trpc/client.tsx`,
       // `server/mail/index.ts`) and the Radix menu paths in
-      // `consumable-row.tsx` — all of it covered by the Playwright suite
-      // instead.
+      // `consumable-row.tsx` and `language-switcher.tsx` — all of it covered
+      // by the Playwright suite instead.
       thresholds: {
         statements: 89,
         branches: 87,

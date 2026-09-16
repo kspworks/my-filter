@@ -75,6 +75,23 @@ describe("creating", () => {
     ).toHaveLength(1);
   });
 
+  it("cannot be submitted twice while the write is running", async () => {
+    const actor = user();
+    app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);
+
+    await actor.type(screen.getByLabelText("Name"), "Sediment PP");
+    const release = app.holdMutations();
+    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+
+    const submit = screen.getByRole("button", { name: "Add consumable" });
+    await waitFor(() => expect(submit).toHaveAttribute("aria-busy", "true"));
+    expect(submit).toBeDisabled();
+
+    release();
+    expect(await screen.findByText("Consumable added.")).toBeInTheDocument();
+    expect(await app.caller.consumables.list()).toHaveLength(1);
+  });
+
   it("attaches to the system it was opened for", async () => {
     const actor = user();
     const system = await app.caller.systems.create({

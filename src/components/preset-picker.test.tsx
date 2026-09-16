@@ -68,6 +68,22 @@ describe("choosing a set", () => {
 });
 
 describe("applying a set", () => {
+  it("cannot be applied twice while the write is running", async () => {
+    const actor = await open();
+
+    await actor.click(await screen.findByText("3-stage pre-filter block"));
+    const release = app.holdMutations();
+    await actor.click(screen.getByRole("button", { name: /Add set/ }));
+
+    const apply = screen.getByRole("button", { name: /Add set/ });
+    await waitFor(() => expect(apply).toHaveAttribute("aria-busy", "true"));
+    expect(apply).toBeDisabled();
+
+    release();
+    expect(await screen.findByText("Added 3 consumables.")).toBeInTheDocument();
+    expect(await app.caller.consumables.list({ systemId })).toHaveLength(3);
+  });
+
   it("creates the cartridges and says how many", async () => {
     const actor = await open();
 

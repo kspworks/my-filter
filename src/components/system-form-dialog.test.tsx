@@ -73,6 +73,24 @@ describe("creating", () => {
     );
   });
 
+  it("cannot be submitted twice while the write is running", async () => {
+    const actor = user();
+    app.render(<SystemFormDialog open onOpenChange={onOpenChange} />);
+
+    await actor.type(screen.getByLabelText("Manufacturer"), "Aquafilter");
+    await actor.type(screen.getByLabelText("Model"), "RO-6");
+    const release = app.holdMutations();
+    await actor.click(screen.getByRole("button", { name: "Add system" }));
+
+    const submit = screen.getByRole("button", { name: "Add system" });
+    await waitFor(() => expect(submit).toHaveAttribute("aria-busy", "true"));
+    expect(submit).toBeDisabled();
+
+    release();
+    expect(await screen.findByText("System added.")).toBeInTheDocument();
+    expect(await app.caller.systems.list()).toHaveLength(1);
+  });
+
   it("keeps the notes that were typed", async () => {
     const actor = user();
     app.render(<SystemFormDialog open onOpenChange={onOpenChange} />);

@@ -194,7 +194,8 @@ which is never imported by app code.
 - **`~/test-utils/render`** — `setupApp()` returns `{ render, caller, db, queryClient }`.
   The tRPC client is built on `unstable_localLink`, so a component's `useQuery` runs the
   **real** router, Zod parse and SQL. There is no fetch mocking and there are no fixtures to
-  drift.
+  drift. That link resolves on a microtask, so a pending state never renders on its own:
+  `app.holdMutations()` parks mutations until the `release` it returns is called.
 
 Rules worth knowing before writing one:
 
