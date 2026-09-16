@@ -22,7 +22,10 @@ test("creates a cartridge through the select menus", async ({ page }) => {
     .getByRole("button", { name: "Add system" })
     .click();
 
-  await page.getByRole("link", { name: new RegExp(MANUFACTURER) }).click();
+  // Creating a system lands on its page.
+  await expect(
+    page.getByRole("heading", { name: `${MANUFACTURER} IX-1` }),
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "Add consumable", exact: true })
     .click();

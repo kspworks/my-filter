@@ -24,8 +24,9 @@ test("sets a system up, fills it from a preset and records a replacement", async
       .click();
 
     await expect(page.getByText("System added.")).toBeVisible();
+    // Creating a system lands on its page, ready for cartridges.
     await expect(
-      page.getByRole("link", { name: new RegExp(MANUFACTURER) }),
+      page.getByRole("heading", { name: `${MANUFACTURER} RO-6` }),
     ).toBeVisible();
   });
 

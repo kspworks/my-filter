@@ -1,6 +1,7 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -36,10 +37,11 @@ export function SystemFormDialog({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Omitted when creating. */
+  /** Omitted when creating, which then navigates to the new system. */
   system?: SystemDraft;
 }) {
   const trpc = useTRPC();
+  const router = useRouter();
   const refresh = useRefreshData();
   const today = useToday();
   const t = useTranslations("systems");
@@ -60,7 +62,11 @@ export function SystemFormDialog({
 
   const createMutation = useMutation(
     trpc.systems.create.mutationOptions({
-      onSuccess: () => onSettled(t("toast.added")),
+      onSuccess: async (created) => {
+        await onSettled(t("toast.added"));
+        // Straight to the new system, where its cartridges get added.
+        router.push(`/systems/${created.id}`);
+      },
       onError,
     }),
   );
