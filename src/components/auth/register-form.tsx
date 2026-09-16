@@ -15,6 +15,7 @@ import {
 } from "~/components/ui/card";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Spinner } from "~/components/ui/spinner";
 import { setLocale } from "~/i18n/set-locale";
 import { signUp } from "~/lib/auth-client";
 import { useAuthErrorMessage } from "~/lib/auth-errors";
@@ -118,7 +119,13 @@ export function RegisterForm() {
             </p>
           ) : null}
 
-          <Button type="submit" disabled={pending} className="w-full">
+          <Button
+            type="submit"
+            disabled={pending}
+            aria-busy={pending}
+            className="w-full"
+          >
+            {pending && <Spinner />}
             {pending ? t("creatingAccount") : t("createAccount")}
           </Button>
 

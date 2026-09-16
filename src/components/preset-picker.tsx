@@ -16,6 +16,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Spinner } from "~/components/ui/spinner";
 import { useLabels } from "~/lib/labels";
 import { useTRPC } from "~/lib/trpc/client";
 import { useErrorToast } from "~/lib/trpc/use-error-toast";
@@ -117,6 +118,7 @@ export function PresetPicker({
           </Button>
           <Button
             disabled={!selected || applyMutation.isPending}
+            aria-busy={applyMutation.isPending}
             onClick={() =>
               selected &&
               applyMutation.mutate({
@@ -126,7 +128,7 @@ export function PresetPicker({
               })
             }
           >
-            <Sparkles aria-hidden />
+            {applyMutation.isPending ? <Spinner /> : <Sparkles aria-hidden />}
             {t("apply")}
           </Button>
         </DialogFooter>

@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
+import { Spinner } from "~/components/ui/spinner";
 import { Textarea } from "~/components/ui/textarea";
 import {
   CONSUMABLE_TYPES,
@@ -269,7 +270,8 @@ export function ConsumableFormDialog({
             >
               {tCommon("cancel")}
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} aria-busy={pending}>
+              {pending && <Spinner />}
               {isEdit ? tCommon("saveChanges") : t("form.addTitle")}
             </Button>
           </DialogFooter>

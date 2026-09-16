@@ -37,6 +37,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/components/ui/popover";
+import { Spinner } from "~/components/ui/spinner";
 import { dueInfo } from "~/lib/due-date";
 import { useLabels } from "~/lib/labels";
 import { useTRPC } from "~/lib/trpc/client";
@@ -115,6 +116,12 @@ export function ConsumableRow({
       onError,
     }),
   );
+
+  // Both replace buttons share one mutation. The backdated one can only be
+  // submitted from the open popover, which closes on success — so the popover's
+  // state tells which button was clicked.
+  const replacingBackdated = markReplacedMutation.isPending && backdateOpen;
+  const replacingToday = markReplacedMutation.isPending && !backdateOpen;
 
   const attachMutation = useMutation(
     trpc.consumables.attach.mutationOptions({
@@ -203,6 +210,7 @@ export function ConsumableRow({
           variant="outline"
           className="rounded-r-none"
           disabled={markReplacedMutation.isPending}
+          aria-busy={replacingToday}
           onClick={() =>
             markReplacedMutation.mutate({
               id: consumable.id,
@@ -210,7 +218,7 @@ export function ConsumableRow({
             })
           }
         >
-          <RotateCcw aria-hidden />
+          {replacingToday ? <Spinner /> : <RotateCcw aria-hidden />}
           {t("markReplaced")}
         </Button>
 
@@ -242,6 +250,7 @@ export function ConsumableRow({
               <Button
                 size="sm"
                 disabled={markReplacedMutation.isPending}
+                aria-busy={replacingBackdated}
                 onClick={() =>
                   markReplacedMutation.mutate({
                     id: consumable.id,
@@ -249,6 +258,7 @@ export function ConsumableRow({
                   })
                 }
               >
+                {replacingBackdated && <Spinner />}
                 {tCommon("save")}
               </Button>
             </div>

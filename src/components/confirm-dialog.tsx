@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "~/components/ui/alert-dialog";
+import { Spinner } from "~/components/ui/spinner";
 
 export function ConfirmDialog({
   open,
@@ -44,11 +45,13 @@ export function ConfirmDialog({
           <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction
             disabled={pending}
+            aria-busy={pending}
             onClick={(event) => {
               event.preventDefault();
               onConfirm();
             }}
           >
+            {pending && <Spinner />}
             {confirmLabel ?? t("delete")}
           </AlertDialogAction>
         </AlertDialogFooter>

@@ -16,6 +16,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { Spinner } from "~/components/ui/spinner";
 import { Textarea } from "~/components/ui/textarea";
 import { useTRPC } from "~/lib/trpc/client";
 import { useErrorToast } from "~/lib/trpc/use-error-toast";
@@ -161,7 +162,8 @@ export function SystemFormDialog({
             >
               {tCommon("cancel")}
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} aria-busy={pending}>
+              {pending && <Spinner />}
               {isEdit ? tCommon("saveChanges") : t("form.addTitle")}
             </Button>
           </DialogFooter>

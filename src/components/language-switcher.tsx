@@ -12,6 +12,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "~/components/ui/dropdown-menu";
+import { Spinner } from "~/components/ui/spinner";
 import { isLocale, LOCALES } from "~/i18n/locale";
 import { setLocale } from "~/i18n/set-locale";
 
@@ -40,8 +41,9 @@ export function LanguageSwitcher() {
           variant="ghost"
           aria-label={t("label")}
           disabled={pending}
+          aria-busy={pending}
         >
-          <Languages aria-hidden />
+          {pending ? <Spinner /> : <Languages aria-hidden />}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
