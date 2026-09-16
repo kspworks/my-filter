@@ -27,6 +27,17 @@ export function formatDate(dateString: string, locale: Locale): string {
   });
 }
 
+/**
+ * The same display pattern for a real instant (epoch milliseconds), such as an
+ * invite's expiry. The day it falls on is the *reader's*, since this runs where
+ * they are — unlike `formatDate`, whose input already is a calendar day.
+ */
+export function formatInstant(epochMs: number, locale: Locale): string {
+  return format(new Date(epochMs), "d MMM yyyy", {
+    locale: DATE_FNS_LOCALES[locale],
+  });
+}
+
 export type DuePhraseKey = "today" | "overdue" | "upcoming";
 
 /**

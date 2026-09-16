@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AppNav } from "~/components/app-nav";
+import { env } from "~/env";
 import { auth } from "~/server/auth";
 
 /**
@@ -15,7 +16,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <AppNav userName={session.user.name} />
+      <AppNav userName={session.user.name} invitesEnabled={env.INVITE_ONLY} />
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
         {children}
       </main>

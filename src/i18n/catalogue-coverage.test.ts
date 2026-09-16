@@ -4,6 +4,7 @@ import { loadMessages } from "~/i18n/messages";
 import { KNOWN_CODES } from "~/lib/auth-errors";
 import { CONSUMABLE_TYPES, INTERVAL_UNITS } from "~/lib/consumables";
 import type { DueStatus } from "~/lib/due-date";
+import { INVITE_STATUSES } from "~/lib/invites";
 import { NOTIFICATION_KINDS } from "~/lib/notifications";
 import { PRESET_ITEM_KEYS, PRESETS } from "~/lib/presets";
 
@@ -40,6 +41,12 @@ function requiredKeys(): string[] {
     // of key exist per unit.
     ...INTERVAL_UNITS.map((unit) => `interval.${unit}`),
     ...DUE_STATUSES.map((status) => `dueStatus.${status}`),
+    ...INVITE_STATUSES.map((status) => `inviteStatus.${status}`),
+    // The register page explains a refused link by its reason.
+    ...INVITE_STATUSES.filter((status) => status !== "pending").map(
+      (reason) => `auth.inviteRequired.${reason}`,
+    ),
+    "auth.inviteRequired.missing",
     ...PRESETS.flatMap((preset) => [
       `presets.sets.${preset.id}.name`,
       `presets.sets.${preset.id}.description`,

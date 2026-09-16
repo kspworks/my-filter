@@ -3,6 +3,7 @@ import type { DbOrTransaction } from "~/server/db";
 import {
   consumableReplacements,
   consumables,
+  invites,
   notificationLog,
   systems,
   userSettings,
@@ -20,6 +21,11 @@ import { account, session, user } from "~/server/db/schema/auth";
  * hand is the same work, is identical on every connection, and yields the counts
  * the CLI shows before it asks.
  *
+ * Invites are the one table that points at a user from *two* columns. The ones
+ * this user created go with them; the one they joined through belongs to
+ * somebody else and stays, with `used_by_user_id` cleared — the same `set null`
+ * the schema declares, done by hand for the same reason.
+ *
  * `verification` is deliberately left alone: it has no `user_id`, and nothing in
  * this app writes to it (there is no email-verification flow).
  */
@@ -30,6 +36,7 @@ export type FootprintCounts = {
   replacements: number;
   notifications: number;
   settings: number;
+  invites: number;
   sessions: number;
   accounts: number;
 };
@@ -48,6 +55,7 @@ const userScopedTables = [
   consumables,
   systems,
   userSettings,
+  invites,
   session,
   account,
 ] as const;
@@ -95,6 +103,7 @@ export async function findUserFootprint(
     replacementCount,
     notificationCount,
     settingsCount,
+    inviteCount,
     sessionCount,
     accountCount,
   ] = await Promise.all([
@@ -103,6 +112,7 @@ export async function findUserFootprint(
     countRows(db, consumableReplacements, found.id),
     countRows(db, notificationLog, found.id),
     countRows(db, userSettings, found.id),
+    countRows(db, invites, found.id),
     countRows(db, session, found.id),
     countRows(db, account, found.id),
   ]);
@@ -113,6 +123,7 @@ export async function findUserFootprint(
     replacements: replacementCount,
     notifications: notificationCount,
     settings: settingsCount,
+    invites: inviteCount,
     sessions: sessionCount,
     accounts: accountCount,
   };
@@ -136,6 +147,12 @@ export async function deleteUserEverywhere(
 ): Promise<number> {
   return db.transaction(async (tx) => {
     let deleted = 0;
+
+    // Not counted: the row survives, only the reference to this user goes.
+    await tx
+      .update(invites)
+      .set({ usedByUserId: null })
+      .where(eq(invites.usedByUserId, userId));
 
     for (const table of userScopedTables) {
       const result = await tx.delete(table).where(eq(table.userId, userId));

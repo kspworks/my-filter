@@ -7,7 +7,8 @@
     "dashboard": "Dashboard",
     "systems": "Systems",
     "consumables": "Consumables",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "invites": "Invites"
   },
   "settings": {
     "theme": {
@@ -55,6 +56,12 @@
     "overdue": "Overdue",
     "due_soon": "Due soon",
     "ok": "On schedule"
+  },
+  "inviteStatus": {
+    "pending": "Waiting",
+    "used": "Used",
+    "revoked": "Revoked",
+    "expired": "Expired"
   },
   "duePhrase": {
     "today": "due today",
@@ -152,6 +159,31 @@
     "mostRecent": "Most recent",
     "replaced": "Replaced"
   },
+  "invites": {
+    "title": "Invites",
+    "subtitle": "Registration is by invitation. Create a link for each person you want to invite — it works once and expires in {count, plural, one {# day} other {# days}}.",
+    "create": "Create invite link",
+    "creating": "Creating link…",
+    "remaining": "{count, plural, =0 {No links left for now. Revoke one, or wait until one is used or expires.} one {You can create # more link.} other {You can create # more links.}}",
+    "demoNotice": "The demo account cannot invite people.",
+    "emptyTitle": "No invites yet",
+    "emptyBody": "Create a link and send it to the person you want to invite.",
+    "linkLabel": "Invite link",
+    "copy": "Copy link",
+    "revoke": "Revoke",
+    "revokeTitle": "Revoke this invite link?",
+    "revokeBody": "Anyone who has it will no longer be able to create an account with it.",
+    "createdOn": "Created {date}",
+    "expiresOn": "Expires {date}",
+    "usedBy": "Joined as «{name}»",
+    "toast": {
+      "created": "Invite link created and copied.",
+      "createdNotCopied": "Invite link created. Copy it and send it to the person you are inviting.",
+      "copied": "Link copied.",
+      "copyFailed": "Could not copy the link. Select it and copy it by hand.",
+      "revoked": "Invite link revoked."
+    }
+  },
   "presets": {
     "dialogTitle": "Add a standard cartridge set",
     "dialogDescription": "A starting point for common osmosis units. Everything it creates is editable afterwards.",
@@ -204,7 +236,16 @@
       "USER_ALREADY_EXISTS": "An account with this email already exists.",
       "INVALID_EMAIL": "That email address is not valid.",
       "PASSWORD_TOO_SHORT": "That password is too short.",
-      "PASSWORD_TOO_LONG": "That password is too long."
+      "PASSWORD_TOO_LONG": "That password is too long.",
+      "INVITE_REQUIRED": "This invite link is no longer valid."
+    },
+    "invitedBy": "«{name}» invited you to My Filter.",
+    "inviteRequired": {
+      "title": "Registration is by invitation",
+      "missing": "New accounts can only be created with an invite link from an existing user.",
+      "used": "This invite link has already been used. Ask the person who sent it for a new one.",
+      "revoked": "This invite link was revoked. Ask the person who sent it for a new one.",
+      "expired": "This invite link has expired. Ask the person who sent it for a new one."
     }
   },
   "email": {
@@ -230,7 +271,8 @@
     "systemDetail": "System · My Filter",
     "consumables": "Consumables · My Filter",
     "signIn": "Sign in · My Filter",
-    "register": "Create account · My Filter"
+    "register": "Create account · My Filter",
+    "invites": "Invites · My Filter"
   },
   "errors": {
     "systemNotFound": "System not found",
@@ -239,6 +281,10 @@
     "installEntryProtected": "The original installation entry cannot be removed",
     "generic": "Something went wrong. Please try again.",
     "invalidInput": "Please check the values in the form and try again.",
-    "unauthorized": "Your session has expired. Please sign in again."
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "invitesUnavailable": "Invites are not available.",
+    "inviteNotFound": "Invite not found",
+    "demoCannotInvite": "The demo account cannot invite people.",
+    "inviteLimit": "{count, plural, one {You can have at most # open invite link.} other {You can have at most # open invite links.}}"
   }
 }

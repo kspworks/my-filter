@@ -19,7 +19,12 @@ import { Spinner } from "~/components/ui/spinner";
 import { signIn } from "~/lib/auth-client";
 import { useAuthErrorMessage } from "~/lib/auth-errors";
 
-export function LoginForm() {
+export function LoginForm({
+  registrationOpen = true,
+}: {
+  /** `false` while registration is invite-only: there is no form to point at. */
+  registrationOpen?: boolean;
+}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations("auth");
@@ -96,12 +101,14 @@ export function LoginForm() {
             {pending ? t("signingIn") : t("signIn")}
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground">
-            {t("noAccount")}{" "}
-            <Link className="text-primary hover:underline" href="/register">
-              {t("createOne")}
-            </Link>
-          </p>
+          {registrationOpen ? (
+            <p className="text-center text-sm text-muted-foreground">
+              {t("noAccount")}{" "}
+              <Link className="text-primary hover:underline" href="/register">
+                {t("createOne")}
+              </Link>
+            </p>
+          ) : null}
         </form>
       </CardContent>
     </Card>

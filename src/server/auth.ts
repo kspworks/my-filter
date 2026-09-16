@@ -10,10 +10,16 @@ import {
 import { db } from "~/server/db";
 import { newId } from "~/server/db/id";
 import { account, session, user, verification } from "~/server/db/schema/auth";
+import { createSignUpGate } from "~/server/invites/sign-up-gate";
 import {
   defaultUserLocale,
   saveUserLocale,
 } from "~/server/settings/user-settings";
+
+const signUpGate = createSignUpGate({
+  db,
+  inviteOnly: () => env.INVITE_ONLY,
+});
 
 export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
@@ -32,6 +38,11 @@ export const auth = betterAuth({
   user: {
     // The signup form's "username" is a display name. Login is always by email.
     additionalFields: {},
+  },
+  // Invite-only registration when `INVITE_ONLY` is on; a no-op otherwise.
+  hooks: {
+    before: signUpGate.before,
+    after: signUpGate.after,
   },
   databaseHooks: {
     session: {

@@ -32,6 +32,10 @@ export const env = createEnv({
     // and the route rejects everything when it is unset — an unconfigured
     // deploy should be shut, not open.
     CRON_SECRET: z.string().min(16).optional(),
+    // One switch for the whole invite feature: off, registration is open and
+    // nothing about invites is visible; on, `/register` only accepts a valid
+    // invite link and every user gets an Invites page to create them.
+    INVITE_ONLY: z.stringbool().default(false),
   },
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
@@ -44,6 +48,7 @@ export const env = createEnv({
     GMAIL_APP_PASSWORD: process.env.GMAIL_APP_PASSWORD,
     MAIL_FROM: process.env.MAIL_FROM,
     CRON_SECRET: process.env.CRON_SECRET,
+    INVITE_ONLY: process.env.INVITE_ONLY,
   },
   emptyStringAsUndefined: true,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

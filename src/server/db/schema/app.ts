@@ -157,6 +157,46 @@ export const notificationLog = sqliteTable(
   ],
 );
 
+/**
+ * Invite links, for when `INVITE_ONLY` closes open registration.
+ *
+ * `userId` is the person who created the link — named like every other
+ * user-scoped table's owner column, so the ownership rules and
+ * `deleteUserEverywhere` apply to it unchanged.
+ *
+ * `claimedAt` is the mechanism, the same way `notification_log`'s unique index
+ * is: sign-up claims a link with a conditional `UPDATE … RETURNING`, so exactly
+ * one request can win it, and releases the claim if the account is then not
+ * created. `usedByUserId` is filled in once it is.
+ */
+export const invites = sqliteTable(
+  "invites",
+  {
+    id: text("id").primaryKey().$defaultFn(newId),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // Random bytes, not a cuid: this is a bearer credential and must not be
+    // guessable from anything else in the database.
+    token: text("token").notNull(),
+    expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
+    claimedAt: integer("claimed_at", { mode: "timestamp_ms" }),
+    // The account survives its inviter and vice versa: deleting either one
+    // must not take the other with it.
+    usedByUserId: text("used_by_user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    revokedAt: integer("revoked_at", { mode: "timestamp_ms" }),
+    createdAt: integer("created_at", { mode: "timestamp_ms" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    uniqueIndex("invites_token_idx").on(table.token),
+    index("invites_user_idx").on(table.userId, table.createdAt),
+  ],
+);
+
 export const systemsRelations = relations(systems, ({ many, one }) => ({
   consumables: many(consumables),
   user: one(user, { fields: [systems.userId], references: [user.id] }),
@@ -198,8 +238,13 @@ export const notificationLogRelations = relations(
   }),
 );
 
+export const invitesRelations = relations(invites, ({ one }) => ({
+  user: one(user, { fields: [invites.userId], references: [user.id] }),
+}));
+
 export type System = typeof systems.$inferSelect;
 export type Consumable = typeof consumables.$inferSelect;
 export type ConsumableReplacement = typeof consumableReplacements.$inferSelect;
 export type UserSettings = typeof userSettings.$inferSelect;
 export type NotificationLogEntry = typeof notificationLog.$inferSelect;
+export type Invite = typeof invites.$inferSelect;

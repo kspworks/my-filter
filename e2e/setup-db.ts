@@ -15,7 +15,9 @@ import { migrate } from "drizzle-orm/libsql/migrator";
  */
 
 const DIR = "./.e2e";
-const URL = "file:./.e2e/e2e.db";
+// One file per server: the invite-only server in `playwright.config.ts` runs
+// the same build against its own database, so neither sees the other's users.
+const URLS = ["file:./.e2e/e2e.db", "file:./.e2e/invite-only.db"];
 
 // Wrapped rather than top-level await: the package is CommonJS, so `tsx`
 // compiles this file to CJS.
@@ -23,11 +25,13 @@ async function main() {
   rmSync(DIR, { recursive: true, force: true });
   mkdirSync(DIR, { recursive: true });
 
-  const client = createClient({ url: URL });
-  await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
-  client.close();
+  for (const url of URLS) {
+    const client = createClient({ url });
+    await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
+    client.close();
 
-  console.log(`E2E database ready at ${URL}`);
+    console.log(`E2E database ready at ${url}`);
+  }
 }
 
 main().catch((error: unknown) => {

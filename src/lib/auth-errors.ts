@@ -16,6 +16,8 @@ export const KNOWN_CODES = [
   "INVALID_EMAIL",
   "PASSWORD_TOO_SHORT",
   "PASSWORD_TOO_LONG",
+  // Raised by the invite gate in `~/server/invites/sign-up-gate`.
+  "INVITE_REQUIRED",
 ] as const;
 
 type KnownCode = (typeof KNOWN_CODES)[number];

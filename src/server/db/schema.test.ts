@@ -28,7 +28,7 @@ describe("migrations match the schema", () => {
   it("declares every table the schema defines", () => {
     // Guards the filter above: if the schema stops exporting tables under the
     // names we expect, an empty list would make every case below vacuous.
-    expect(TABLES.length).toBe(9);
+    expect(TABLES.length).toBe(10);
   });
 
   it.each(TABLES)("has every column of %s", async (_name, table) => {

@@ -15,6 +15,13 @@
       "when": 1789413911809,
       "tag": "0001_email_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1789585084861,
+      "tag": "0002_invites",
+      "breakpoints": true
     }
   ]
 }

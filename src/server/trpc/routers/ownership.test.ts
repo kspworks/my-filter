@@ -119,6 +119,19 @@ describe("cross-user access", () => {
       }),
     ).rejects.toThrow(/not found/i);
   });
+
+  it("hides another user's invites", async () => {
+    const owner = await callerFor(db, alice, "en", { inviteOnly: true });
+    const invite = await owner.invites.create();
+    const mallory = await callerFor(db, bob, "en", { inviteOnly: true });
+
+    expect((await mallory.invites.list()).invites).toHaveLength(0);
+    await expect(mallory.invites.revoke({ id: invite.id })).rejects.toThrow(
+      /not found/i,
+    );
+    // And the refusal really left it alone.
+    expect((await owner.invites.list()).invites[0]?.status).toBe("pending");
+  });
 });
 
 describe("replacement log", () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { duePhraseMessage, formatDate } from "~/lib/format-date";
+import { duePhraseMessage, formatDate, formatInstant } from "~/lib/format-date";
 
 /**
  * The only module allowed to format a date for a person. The `yyyy-MM-dd`
@@ -24,6 +24,16 @@ describe("formatDate", () => {
     expect(formatDate("2026-01-01", "en")).toBe("1 Jan 2026");
     expect(formatDate("2026-03-01", "en")).toBe("1 Mar 2026");
     expect(formatDate("2026-12-31", "en")).toBe("31 Dec 2026");
+  });
+});
+
+describe("formatInstant", () => {
+  it("renders an instant in the same pattern, on the reader's own day", () => {
+    // Local noon, so the day is the same in every timezone the suite runs in.
+    const noon = new Date(2026, 8, 30, 12).getTime();
+
+    expect(formatInstant(noon, "en")).toBe("30 Sep 2026");
+    expect(formatInstant(noon, "uk")).toMatch(/^30 .*2026$/);
   });
 });
 

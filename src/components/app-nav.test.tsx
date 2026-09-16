@@ -36,6 +36,20 @@ describe("the links", () => {
     );
   });
 
+  it("links to Invites only while registration is by invite", async () => {
+    const { unmount } = app.render(<AppNav userName="Tester" />);
+    expect(
+      screen.queryByRole("link", { name: "Invites" }),
+    ).not.toBeInTheDocument();
+    unmount();
+
+    app.render(<AppNav userName="Tester" invitesEnabled />);
+    expect(screen.getByRole("link", { name: "Invites" })).toHaveAttribute(
+      "href",
+      "/invites",
+    );
+  });
+
   it.each([
     ["/", "Dashboard"],
     ["/systems", "Systems"],

@@ -54,10 +54,11 @@ export type TestApp = {
 
 export async function setupApp({
   locale = "en" as Locale,
+  inviteOnly = false,
 } = {}): Promise<TestApp> {
   const { db, close } = await makeTestDb();
   const userId = await createUser(db, "tester");
-  const ctx = await makeContext(db, userId, locale);
+  const ctx = await makeContext(db, userId, locale, { inviteOnly });
 
   // The local link resolves on a microtask, so without a gate no render ever
   // happens while a mutation is pending.
@@ -103,7 +104,7 @@ export async function setupApp({
     db,
     userId,
     queryClient,
-    caller: await callerFor(db, userId, locale),
+    caller: await callerFor(db, userId, locale, { inviteOnly }),
     close,
     holdMutations: () => {
       let release!: () => void;

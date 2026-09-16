@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type { ConsumableType, IntervalUnit } from "~/lib/consumables";
 import type { DueStatus } from "~/lib/due-date";
+import type { InviteStatus } from "~/lib/invites";
 
 /**
  * Display text for the stable keys stored in the database. The seam for i18n:
@@ -24,6 +25,7 @@ export function useLabels() {
     consumableType: (type: ConsumableType) => t(`consumableType.${type}`),
     intervalUnit: (unit: IntervalUnit) => t(`intervalUnit.${unit}`),
     dueStatus: (status: DueStatus) => t(`dueStatus.${status}`),
+    inviteStatus: (status: InviteStatus) => t(`inviteStatus.${status}`),
     interval: (value: number, unit: IntervalUnit) =>
       t(`interval.${unit}`, { count: value }),
   };

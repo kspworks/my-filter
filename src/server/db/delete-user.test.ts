@@ -8,6 +8,7 @@ import {
 import {
   consumableReplacements,
   consumables,
+  invites,
   notificationLog,
   systems,
   userSettings,
@@ -76,6 +77,12 @@ async function seedAccount(db: TestDb, email: string): Promise<string> {
     dueOn: "2024-09-01",
     sentAt: new Date(),
   });
+  await db.insert(invites).values({
+    id: createId(),
+    userId,
+    token: createId(),
+    expiresAt: new Date("2030-01-01T00:00:00Z"),
+  });
 
   return userId;
 }
@@ -104,10 +111,11 @@ describe("findUserFootprint", () => {
       replacements: 2,
       notifications: 1,
       settings: 1,
+      invites: 1,
       sessions: 1,
       accounts: 1,
     });
-    expect(footprint?.total).toBe(8);
+    expect(footprint?.total).toBe(9);
   });
 
   it("finds the same account by id and by email", async () => {
@@ -164,6 +172,9 @@ describe("deleteUserEverywhere", () => {
       settings: await rows(
         db.select().from(userSettings).where(eq(userSettings.userId, userId)),
       ),
+      invites: await rows(
+        db.select().from(invites).where(eq(invites.userId, userId)),
+      ),
       sessions: await rows(
         db.select().from(session).where(eq(session.userId, userId)),
       ),
@@ -176,8 +187,8 @@ describe("deleteUserEverywhere", () => {
   it("removes the account and every row belonging to it", async () => {
     const deleted = await deleteUserEverywhere(handle.db, victimId);
 
-    // The eight dependent rows plus the user row itself.
-    expect(deleted).toBe(9);
+    // The nine dependent rows plus the user row itself.
+    expect(deleted).toBe(10);
     expect(await rowsFor(victimId)).toEqual({
       users: 0,
       systems: 0,
@@ -185,9 +196,27 @@ describe("deleteUserEverywhere", () => {
       replacements: 0,
       notifications: 0,
       settings: 0,
+      invites: 0,
       sessions: 0,
       accounts: 0,
     });
+  });
+
+  it("keeps the invite they joined through, without pointing at them", async () => {
+    // The bystander invited the victim: that invite is the bystander's row.
+    await handle.db
+      .update(invites)
+      .set({ claimedAt: new Date(), usedByUserId: victimId })
+      .where(eq(invites.userId, bystanderId));
+
+    await deleteUserEverywhere(handle.db, victimId);
+
+    const [kept] = await handle.db
+      .select()
+      .from(invites)
+      .where(eq(invites.userId, bystanderId));
+    expect(kept?.usedByUserId).toBeNull();
+    expect(kept?.claimedAt).not.toBeNull();
   });
 
   it("leaves every other account untouched", async () => {

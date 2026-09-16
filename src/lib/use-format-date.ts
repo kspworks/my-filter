@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { duePhraseMessage, formatDate } from "~/lib/format-date";
+import { duePhraseMessage, formatDate, formatInstant } from "~/lib/format-date";
 
 /**
  * The React bindings for `~/lib/format-date`, which stays pure so that server
@@ -13,6 +13,12 @@ import { duePhraseMessage, formatDate } from "~/lib/format-date";
 export function useFormatDate(): (dateString: string) => string {
   const locale = useLocale();
   return (dateString) => formatDate(dateString, locale);
+}
+
+/** `formatInstant` bound to the reader's language. */
+export function useFormatInstant(): (epochMs: number) => string {
+  const locale = useLocale();
+  return (epochMs) => formatInstant(epochMs, locale);
 }
 
 /** "due today" / "3 days overdue" / "in 5 days", in the reader's language. */

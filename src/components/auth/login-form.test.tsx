@@ -104,3 +104,22 @@ describe("the form itself", () => {
     );
   });
 });
+
+describe("the way to register", () => {
+  it("is offered while registration is open", async () => {
+    app.render(<LoginForm />);
+
+    expect(screen.getByRole("link", { name: "Create one" })).toHaveAttribute(
+      "href",
+      "/register",
+    );
+  });
+
+  it("is not offered while registration is by invite only", async () => {
+    app.render(<LoginForm registrationOpen={false} />);
+
+    expect(
+      screen.queryByRole("link", { name: "Create one" }),
+    ).not.toBeInTheDocument();
+  });
+});

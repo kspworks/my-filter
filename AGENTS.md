@@ -134,6 +134,41 @@ Never filter recipients on `user.emailVerified` — nothing in this app ever set
 The one recipient that *is* filtered is the seeded demo account (`DEMO_EMAIL` in
 `~/lib/demo`), in `loadNotifiable` itself, so it is never a candidate nor a claim.
 
+## Invites
+
+`INVITE_ONLY` is one switch for the whole feature. **Off:** registration is open, and the
+Invites page, the nav link and the tRPC procedures do not exist. The procedures answer
+`NOT_FOUND` rather than `FORBIDDEN`, the same "does not exist" an unknown row gets. **On:**
+`/register` only accepts a usable `?invite=` token, and the login page stops linking to it.
+
+Routers never import `~/env`, because jsdom tests run the real router with no environment. The
+flag travels as `ctx.inviteOnly`, which `callerFor(…, { inviteOnly })` and
+`setupApp({ inviteOnly })` set. Pages and layouts, which are never rendered by Vitest, read
+`env.INVITE_ONLY` directly.
+
+**The claim is the mechanism**, the same shape as the digest's sent-log.
+`src/server/invites/sign-up-gate.ts` hooks `/sign-up/email`:
+- `before` claims the link with one conditional `UPDATE … RETURNING`, so of two racing
+  sign-ups exactly one wins. It throws `INVITE_REQUIRED` otherwise.
+- `after` runs even when the endpoint threw. It records the new account, or releases the claim
+  if none was created, so a duplicate email does not burn the link.
+- A refused `before` skips `after`. That is what stops a losing request from releasing the
+  winner's claim.
+
+The token rides on the sign-up body as `inviteToken`: better-auth accepts unknown body keys and
+its field parser ignores them. `src/server/auth-invites.test.ts` pins all of this against the
+real handler, so an upgrade that changes any of it fails there.
+
+**Only HTTP requests are gated.** A direct `auth.api.signUpEmail` call has no `request`, and
+`scripts/seed.ts` relies on that to create the demo account on an invite-only deploy. The demo
+account in turn cannot create invites (`invites.create` checks `DEMO_EMAIL`), because its
+password is shared.
+
+A link's state is derived by `inviteStatus` in `~/lib/invites`, never stored. `claimedAt`, not
+`usedByUserId`, means "used": a link whose sign-up is still running is already spoken for.
+Expiry is a real instant compared on the server, unlike the calendar dates elsewhere, and the
+list returns it as epoch milliseconds for `formatInstant`.
+
 ## Theme
 
 Dark by default, via next-themes (`src/components/theme-provider.tsx`), with a

@@ -1,3 +1,4 @@
+import { env } from "~/env";
 import { localeFromCookieHeader } from "~/i18n/locale";
 import { createAppTranslator } from "~/i18n/translator";
 import { auth } from "~/server/auth";
@@ -16,6 +17,9 @@ export async function createTRPCContext(opts: { headers: Headers }) {
     user: session?.user ?? null,
     locale,
     t: await createAppTranslator(locale),
+    // Carried on the context rather than read from `~/env` in a router, so the
+    // routers stay importable by jsdom tests that have no environment at all.
+    inviteOnly: env.INVITE_ONLY,
   };
 }
 

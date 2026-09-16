@@ -123,3 +123,42 @@ describe("the form itself", () => {
     );
   });
 });
+
+describe("joining through an invite", () => {
+  it("says who sent it and hands the token to the server", async () => {
+    signUp.email.mockResolvedValue({ error: null });
+    app.render(
+      <RegisterForm
+        invite={{ token: "the-invite-token", invitedBy: "Alice" }}
+      />,
+    );
+
+    expect(
+      screen.getByText("«Alice» invited you to My Filter."),
+    ).toBeInTheDocument();
+
+    await fill();
+
+    expect(signUp.email).toHaveBeenCalledWith({
+      name: "Tester",
+      email: "tester@example.com",
+      password: "correct-horse",
+      inviteToken: "the-invite-token",
+    });
+  });
+
+  it("explains a link that stopped working after the page loaded", async () => {
+    signUp.email.mockResolvedValue({ error: { code: "INVITE_REQUIRED" } });
+    app.render(
+      <RegisterForm
+        invite={{ token: "the-invite-token", invitedBy: "Alice" }}
+      />,
+    );
+
+    await fill();
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "This invite link is no longer valid.",
+    );
+  });
+});

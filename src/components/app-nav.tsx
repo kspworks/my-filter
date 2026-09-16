@@ -17,7 +17,16 @@ const LINKS = [
   { href: "/consumables", key: "consumables" },
 ] as const;
 
-export function AppNav({ userName }: { userName: string }) {
+/** Only while registration is invite-only; otherwise there is nothing to share. */
+const INVITES_LINK = { href: "/invites", key: "invites" } as const;
+
+export function AppNav({
+  userName,
+  invitesEnabled = false,
+}: {
+  userName: string;
+  invitesEnabled?: boolean;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -41,7 +50,7 @@ export function AppNav({ userName }: { userName: string }) {
         </Link>
 
         <nav className="flex items-center gap-1">
-          {LINKS.map((link) => {
+          {(invitesEnabled ? [...LINKS, INVITES_LINK] : LINKS).map((link) => {
             const active =
               link.href === "/"
                 ? pathname === "/"

@@ -98,6 +98,17 @@ ephemeral), which is why the app talks to libSQL from the start. To deploy on Ve
 create a Turso database, set `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`
 and `BETTER_AUTH_URL`, and run `pnpm db:migrate` against the remote URL.
 
+### Invite-only registration
+
+`INVITE_ONLY=true` closes open registration. `/register` then only works through an invite
+link, and every signed-in user gets an **Invites** page to create them: each link works for
+one person, expires after 14 days, and a user can hold at most five open ones at a time. The
+shared demo account cannot create any. Unset or `false`, registration is open and nothing
+about invites is visible.
+
+Switch it on once at least one real account exists. Nobody can register without a link, so a
+fresh deploy with the switch already on has nobody to send the first one.
+
 ### Backups
 
 `pnpm db:backup` dumps whatever `DATABASE_URL` points at, so taking a copy of production is

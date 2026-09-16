@@ -22,7 +22,12 @@ import { useAuthErrorMessage } from "~/lib/auth-errors";
 
 const MIN_PASSWORD_LENGTH = 8;
 
-export function RegisterForm() {
+export function RegisterForm({
+  invite,
+}: {
+  /** Present while registration is invite-only; the gate claims the token. */
+  invite?: { token: string; invitedBy: string };
+} = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const t = useTranslations("auth");
@@ -48,6 +53,9 @@ export function RegisterForm() {
       name: name.trim(),
       email,
       password,
+      // Not a user field: better-auth passes unknown body keys through to the
+      // hooks, where `~/server/invites/sign-up-gate` reads it.
+      ...(invite ? { inviteToken: invite.token } : {}),
     });
 
     if (signUpError) {
@@ -71,7 +79,11 @@ export function RegisterForm() {
     <Card>
       <CardHeader>
         <CardTitle>{t("createAccount")}</CardTitle>
-        <CardDescription>{t("createAccountDescription")}</CardDescription>
+        <CardDescription>
+          {invite
+            ? t("invitedBy", { name: invite.invitedBy })
+            : t("createAccountDescription")}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form className="grid gap-4" onSubmit={handleSubmit}>

@@ -19,6 +19,7 @@ export async function makeContext(
   db: TestDb,
   userId: string | null,
   locale: Locale = "en",
+  { inviteOnly = false }: { inviteOnly?: boolean } = {},
 ): Promise<TRPCContext> {
   return {
     db,
@@ -26,6 +27,7 @@ export async function makeContext(
     user: userId ? ({ id: userId } as NonNullable<TRPCContext["user"]>) : null,
     locale,
     t: await createAppTranslator(locale),
+    inviteOnly,
   } as TRPCContext;
 }
 
@@ -33,6 +35,7 @@ export async function callerFor(
   db: TestDb,
   userId: string | null,
   locale: Locale = "en",
+  options: { inviteOnly?: boolean } = {},
 ) {
-  return createCaller(await makeContext(db, userId, locale));
+  return createCaller(await makeContext(db, userId, locale, options));
 }
