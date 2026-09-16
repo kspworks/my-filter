@@ -1,4 +1,5 @@
-import { eq } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
+import { DEMO_EMAIL } from "~/lib/demo";
 import type { DbOrTransaction } from "~/server/db";
 import { consumables, systems, userSettings } from "~/server/db/schema/app";
 import { user } from "~/server/db/schema/auth";
@@ -15,6 +16,10 @@ import type { NotifiableRow } from "~/server/notifications/select";
  * Deliberately not filtered on `user.emailVerified`: nothing in this app has
  * ever set it true (`requireEmailVerification: false`), so gating on it would
  * quietly send to nobody.
+ *
+ * The seeded demo account is left out here, at the source, rather than after
+ * planning: its cartridges are overdue on purpose, and filtering any later would
+ * still count them as candidates and claim rows in `notification_log`.
  */
 export async function loadNotifiable(
   db: DbOrTransaction,
@@ -36,5 +41,6 @@ export async function loadNotifiable(
     .from(consumables)
     .innerJoin(user, eq(consumables.userId, user.id))
     .leftJoin(systems, eq(consumables.systemId, systems.id))
-    .leftJoin(userSettings, eq(userSettings.userId, user.id));
+    .leftJoin(userSettings, eq(userSettings.userId, user.id))
+    .where(ne(user.email, DEMO_EMAIL));
 }

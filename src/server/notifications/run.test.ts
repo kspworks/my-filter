@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { DEMO_EMAIL } from "~/lib/demo";
 import { nextDueOn } from "~/lib/due-date";
 import * as schema from "~/server/db/schema";
 import { runDailyDigest } from "~/server/notifications/run";
@@ -219,6 +220,17 @@ describe("one email per person", () => {
     // Alice has no `user_settings` row at all, and still gets readable mail.
     expect(forBob?.subject).toBe("1 картридж потребує заміни");
     expect(forBob?.text).toMatch(/[Ѐ-ӿ]/);
+  });
+  it("never writes to the demo account", async () => {
+    const demo = await createUser(db, "demo", { email: DEMO_EMAIL });
+    await cartridge(demo, 0);
+    await cartridge(alice, 0);
+
+    const summary = await run();
+
+    expect(mail.sent.map((m) => m.to)).toEqual(["alice@example.com"]);
+    expect(summary).toMatchObject({ candidates: 1, sent: 1, emails: 1 });
+    expect(await logRows()).toMatchObject([{ userId: alice }]);
   });
 });
 

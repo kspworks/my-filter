@@ -3,6 +3,7 @@ import "dotenv/config";
 import { subDays, subMonths } from "date-fns";
 import { eq } from "drizzle-orm";
 import type { ConsumableType, IntervalUnit } from "~/lib/consumables";
+import { DEMO_EMAIL } from "~/lib/demo";
 import { toDateString } from "~/lib/due-date";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
@@ -20,7 +21,6 @@ import { user } from "~/server/db/schema/auth";
  * Re-runnable: the demo user is deleted first, and every dependent row cascades.
  */
 
-const DEMO_EMAIL = "demo@myfilter.app";
 const DEMO_PASSWORD = "demo-password";
 
 const today = new Date();

@@ -30,12 +30,16 @@ export async function makeTestDb(): Promise<TestDbHandle> {
   return { db, close: () => client.close() };
 }
 
-export async function createUser(db: TestDb, name: string): Promise<string> {
+export async function createUser(
+  db: TestDb,
+  name: string,
+  { email = `${name}@example.com` } = {},
+): Promise<string> {
   const id = createId();
   await db.insert(schema.user).values({
     id,
     name,
-    email: `${name}@example.com`,
+    email,
     emailVerified: false,
     createdAt: new Date(),
     updatedAt: new Date(),

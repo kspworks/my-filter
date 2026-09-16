@@ -131,6 +131,8 @@ real `Request` without importing the database singleton. Adding a provider is on
 implementing `MailTransport` and one arm in `create-transport`.
 
 Never filter recipients on `user.emailVerified` — nothing in this app ever sets it true.
+The one recipient that *is* filtered is the seeded demo account (`DEMO_EMAIL` in
+`~/lib/demo`), in `loadNotifiable` itself, so it is never a candidate nor a claim.
 
 ## Theme
 

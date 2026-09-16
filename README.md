@@ -28,7 +28,8 @@ Generate a secret with `openssl rand -base64 32`.
 
 The seed creates `demo@myfilter.app` / `demo-password` with two systems and nine
 consumables — some overdue, some due soon, one unassigned. Re-running it deletes and
-recreates that user, which also signs out any open session for it.
+recreates that user, which also signs out any open session for it. The daily digest
+never emails this account, so it is safe to seed in production for demonstrations.
 
 ## Scripts
 
