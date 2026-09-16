@@ -189,7 +189,7 @@ export function DashboardView() {
           <Skeleton className="h-24" />
         </div>
       ) : items.length === 0 && systems.length === 0 ? (
-        <Card>
+        <Card className="gap-0">
           <CardContent className="py-12 text-center">
             <p className="font-medium">{t("emptyTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -203,7 +203,7 @@ export function DashboardView() {
         </Card>
       ) : (
         groups.map((group) => (
-          <Card key={group.key} className="overflow-hidden py-0">
+          <Card key={group.key} className="overflow-hidden py-0 gap-0">
             <CardHeader className="flex-row items-center justify-between border-b border-border bg-muted/40 py-3">
               <CardTitle className="text-base">
                 {group.href ? (
