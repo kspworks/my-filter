@@ -10,6 +10,20 @@ Filters have staggered service intervals — sediment every 6 months, the membra
 optimises for are **seeing what is overdue** and **marking something replaced in one
 click**.
 
+## Screenshots
+
+The dashboard, most urgent first:
+
+![Dashboard with overdue, due-soon and on-schedule cartridges grouped by system](docs/screenshots/dashboard.en.png)
+
+A system and its cartridges, and one cartridge's service history:
+
+![System page listing five cartridges with their due dates](docs/screenshots/system.en.png)
+
+![Service history dialog for a sediment cartridge](docs/screenshots/history.en.png)
+
+Taken from the demo account `pnpm db:seed` creates.
+
 ## Stack
 
 TypeScript · Next.js 16 (App Router) + React 19 with the React Compiler · tRPC 11 +
