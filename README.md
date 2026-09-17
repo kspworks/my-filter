@@ -10,9 +10,10 @@ click**.
 
 ## Stack
 
-TypeScript · Next.js 16 (App Router) · tRPC 11 · Drizzle ORM over libSQL/SQLite ·
-better-auth · Zod · @t3-oss/env-nextjs · date-fns · next-intl · next-themes ·
-Tailwind 4 + shadcn/ui · lucide-react · Biome · Vitest
+TypeScript · Next.js 16 (App Router) + React 19 with the React Compiler · tRPC 11 +
+TanStack Query · Drizzle ORM over libSQL/SQLite · better-auth · Zod · @t3-oss/env-nextjs ·
+date-fns · next-intl · next-themes · Tailwind 4 + shadcn/ui · lucide-react · sonner ·
+nodemailer · Biome · Vitest · Playwright
 
 ## Getting started
 
@@ -36,12 +37,14 @@ never emails this account, so it is safe to seed in production for demonstration
 | Command | What it does |
 | --- | --- |
 | `pnpm dev` | Dev server on http://localhost:3000 |
-| `pnpm build` / `pnpm start` | Production build / serve |
-| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm build` / `pnpm start` | Production build (`biome ci` first, so lint errors fail it) / serve |
+| `pnpm typecheck` | `next typegen && tsc --noEmit` |
 | `pnpm lint` / `pnpm lint:fix` | Biome check (and autofix) |
-| `pnpm test` | Vitest — unit, router/database integration and component tests |
+| `pnpm format` | Biome formatter only |
+| `pnpm test` / `pnpm test:watch` | Vitest — unit, router/database integration and component tests |
 | `pnpm test:coverage` | The same, with a coverage report and thresholds |
-| `pnpm test:e2e` | Playwright against a production build |
+| `pnpm test:e2e` / `pnpm test:e2e:ui` | Playwright against a production build (headless / UI mode) |
+| `pnpm test:e2e:db` | Rebuild the throwaway e2e database in `./.e2e/` (Playwright does this itself) |
 | `pnpm test:all` | Both suites |
 | `pnpm db:generate` | Create a migration from schema changes |
 | `pnpm db:migrate` | Apply migrations |
@@ -50,6 +53,11 @@ never emails this account, so it is safe to seed in production for demonstration
 | `pnpm db:backfill-locales` | Give every existing account a language, once |
 | `pnpm db:backup` | Write a restorable SQL dump into `./data/` |
 | `pnpm db:delete-user` | Delete one account and all of its data |
+| `pnpm check-updates` | List dependency upgrades (npm-check-updates) |
+
+The app icons (`src/app/icon.svg`, `favicon.ico`, `apple-icon.png`) are committed files drawn
+from the header's Droplets mark. After changing the mark or `--brand`, regenerate them with
+`pnpm exec tsx scripts/generate-icons.ts` and commit the result.
 
 ## How it is put together
 
@@ -74,12 +82,18 @@ seams rather than mocks. Router tests run against an in-memory SQLite built from
 migrations; component tests use tRPC's `unstable_localLink`, so a click in a rendered
 component travels through react-query, the real router, Zod and Drizzle into that database
 — nothing stubs `fetch`. Playwright covers what Vitest structurally cannot: async Server
-Components, the auth redirects, the locale Server Action and Radix overlays. See the
-**Tests** section of `AGENTS.md` for the conventions.
+Components, the auth redirects, the locale Server Action, Radix overlays, the digest endpoint,
+invite-only sign-up, and a Pixel 7 project that fails if any page scrolls sideways on a phone.
+See the **Tests** section of `AGENTS.md` for the conventions.
+
+CI (`.github/workflows/ci.yml`) runs lint, typecheck, coverage, build and the e2e suite on
+every push and pull request, and again weekly against a fresh install, so an upstream change
+shows up before anyone starts an upgrade.
 
 **Dates.** Calendar dates are stored as `TEXT 'YYYY-MM-DD'`; instants as epoch
-milliseconds. "Today" is determined in the browser, not on the server, so a due date is
-never a day off because of the server's timezone. The arithmetic lives in
+milliseconds (seconds on better-auth's own tables, by its convention). "Today" is determined
+in the browser, not on the server, so a due date is never a day off because of the server's
+timezone. The daily digest is the one exception — it has no viewer — and is described below. The arithmetic lives in
 `src/lib/due-date.ts` and is unit-tested, including month-end clamping (31 Jan + 1 month
 = 28 Feb) and DST boundaries.
 
@@ -95,8 +109,30 @@ never a day off because of the server's timezone. The arithmetic lives in
 
 A file-backed SQLite cannot be the production store on serverless hosts (the filesystem is
 ephemeral), which is why the app talks to libSQL from the start. To deploy on Vercel:
-create a Turso database, set `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`
-and `BETTER_AUTH_URL`, and run `pnpm db:migrate` against the remote URL.
+create a Turso database and set `DATABASE_URL`, `DATABASE_AUTH_TOKEN`, `BETTER_AUTH_SECRET`
+and `BETTER_AUTH_URL`, plus `CRON_SECRET` and the mail variables below, and optionally
+`INVITE_ONLY`. Migrations need no manual step: the `vercel-build` script runs
+`pnpm db:migrate` against the remote database after a successful build.
+
+### Email digest
+
+Once a day (`vercel.json`, `0 9 * * *` UTC) Vercel calls `/api/cron/digest`, which emails
+each user about their cartridges: a warning when one is due within fourteen days, and a
+notice once it is due or overdue — combined into a single message when both apply, in the
+user's own language. Which day counts as "today" is resolved in `Europe/Kyiv`, so the
+schedule shifting an hour across DST never changes what is reported.
+
+Each notice is claimed in `notification_log` before it is sent and released if sending fails,
+so a failed run delays a reminder by a day rather than losing or duplicating it.
+
+| Variable | |
+| --- | --- |
+| `CRON_SECRET` | Vercel sends it as a bearer token. Unset, the endpoint refuses every request. |
+| `MAIL_TRANSPORT` | `log` (default) writes the email to the server log; `gmail` sends it. |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` | For `gmail`. An [App Password](https://myaccount.google.com/apppasswords), which needs 2-Step Verification. |
+| `MAIL_FROM` | Optional; defaults to `GMAIL_USER`. |
+
+Because `log` is the default, local development, CI and a fresh clone need no mail secrets.
 
 ### Invite-only registration
 
@@ -166,7 +202,3 @@ installation, the most recent, or a plain replacement follows from its position.
 The UI is **dark by default**, with a Light/Dark/System toggle beside the language picker.
 The theme is kept in `localStorage` and applied by a pre-paint script, so there is no
 flash and no cost to prerendering.
-
-## Not in this iteration
-
-Email notifications and a mobile layout. Neither needs a migration to add.
