@@ -15,6 +15,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Nothing here writes to the repository, and on a public repo a fork's pull
+# request should not get a token that could.
+permissions:
+  contents: read
+
 env:
   # The app validates its environment at import time, so even `next build`
   # needs these. They point at throwaway local state.
