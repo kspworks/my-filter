@@ -75,3 +75,38 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  # Vercel's own Git deploys are switched off (`vercel.json`), so this job is the
+  # only way anything reaches production, and only after `verify` has passed.
+  # Promotion-time gating would not be enough: `vercel-build` runs `db:migrate`,
+  # so by the time a deployment waits to be promoted the production database has
+  # already moved. The build still happens on Vercel, with the production
+  # environment it already holds; GitHub needs nothing but a token.
+  #
+  # The previous deployment keeps serving for a moment against the migrated
+  # schema, so migrations have to stay additive: expand, deploy, then contract.
+  deploy:
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    # The workflow-level group cancels a superseded run, which is right for
+    # `verify` but not for a deploy that is already uploading.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Deploy to Vercel production
+        run: npx --yes vercel@59 deploy --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}

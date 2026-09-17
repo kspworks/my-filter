@@ -135,6 +135,13 @@ Vercel, створіть базу даних у Turso й задайте змін
 потреби, `INVITE_ONLY`. Міграції вручну запускати не треба: після успішної збірки скрипт
 `vercel-build` сам виконує `pnpm db:migrate` для віддаленої бази.
 
+Продакшн розгортає CI, а не Git-інтеграція Vercel: `vercel.json` вимикає автоматичні
+розгортання, а job `deploy` у `.github/workflows/ci.yml` запускає `vercel deploy --prod`
+лише після того, як пуш у `main` пройшов `verify`. Оскільки `vercel-build` виконує міграції,
+це також не пускає неперевірену міграцію до продакшн-бази. Потрібне GitHub-середовище
+`production` із секретом `VERCEL_TOKEN` і змінними `VERCEL_ORG_ID` та `VERCEL_PROJECT_ID`
+(обидва є в `.vercel/project.json` після `vercel link`).
+
 ### Поштовий дайджест
 
 Щодня (`vercel.json`, `0 9 * * *` UTC) Vercel викликає `/api/cron/digest`, і кожен

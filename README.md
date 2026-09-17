@@ -130,6 +130,13 @@ and `BETTER_AUTH_URL`, plus `CRON_SECRET` and the mail variables below, and opti
 `INVITE_ONLY`. Migrations need no manual step: the `vercel-build` script runs
 `pnpm db:migrate` against the remote database after a successful build.
 
+Production deploys come from CI, not from Vercel's Git integration: `vercel.json` turns
+automatic deploys off, and the `deploy` job in `.github/workflows/ci.yml` runs
+`vercel deploy --prod` only after a push to `main` has passed `verify`. Since `vercel-build`
+migrates, that also keeps an untested migration away from the production database. It needs
+a GitHub environment named `production` holding the secret `VERCEL_TOKEN` and the variables
+`VERCEL_ORG_ID` and `VERCEL_PROJECT_ID` (both in `.vercel/project.json` after `vercel link`).
+
 ### Email digest
 
 Once a day (`vercel.json`, `0 9 * * *` UTC) Vercel calls `/api/cron/digest`, which emails
