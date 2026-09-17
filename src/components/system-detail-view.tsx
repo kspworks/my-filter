@@ -92,12 +92,12 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
         </Link>
       </div>
 
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight break-words">
             {systemName}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm break-words text-muted-foreground">
             {t("installedOn", { date: formatDate(system.installedOn) })}
             {system.notes ? ` · ${system.notes}` : null}
           </p>
@@ -117,11 +117,11 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
         </div>
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-sm font-medium text-muted-foreground">
           {t("consumablesHeading", { count: items.length })}
         </h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setChoosingPreset(true)}>
             <Sparkles aria-hidden />
             {t("addStandardSet")}

@@ -143,14 +143,14 @@ export function DashboardView() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {t("title")}
           </h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => setAddingSystem(true)}>
             <Plus aria-hidden />
             {tSystems("add")}
@@ -165,17 +165,25 @@ export function DashboardView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         {TILES.map((tile) => (
-          <Card key={tile.status}>
+          <Card
+            key={tile.status}
+            className="max-sm:[--card-spacing:--spacing(3)]"
+          >
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <tile.icon className={`size-4 ${tile.className}`} aria-hidden />
+              {/* Icon above the label on a phone: a third of the screen is too narrow
+                  for both side by side, especially in Ukrainian. */}
+              <CardTitle className="flex flex-col items-start gap-1 text-xs font-medium text-muted-foreground sm:flex-row sm:items-center sm:gap-2 sm:text-sm">
+                <tile.icon
+                  className={`size-4 shrink-0 ${tile.className}`}
+                  aria-hidden
+                />
                 {labels.dueStatus(tile.status)}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <span className="text-3xl font-semibold tabular-nums">
+              <span className="text-2xl font-semibold tabular-nums sm:text-3xl">
                 {isPending ? "—" : counts[tile.status]}
               </span>
             </CardContent>
@@ -205,7 +213,7 @@ export function DashboardView() {
         groups.map((group) => (
           <Card key={group.key} className="overflow-hidden py-0 gap-0">
             <CardHeader className="flex-row items-center justify-between border-b border-border bg-muted/40 py-3">
-              <CardTitle className="text-base">
+              <CardTitle className="min-w-0 break-words text-base">
                 {group.href ? (
                   <Link href={group.href} className="hover:underline">
                     {group.title ?? t("unassigned")}

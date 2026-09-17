@@ -22,7 +22,7 @@ export function SystemsView() {
 
   return (
     <div className="grid gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {t("title")}
@@ -54,19 +54,19 @@ export function SystemsView() {
           {systemsQuery.data?.map((system) => (
             <Link key={system.id} href={`/systems/${system.id}`}>
               <Card className="transition-colors hover:border-primary/40">
-                <CardContent className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">
+                <CardContent className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-medium break-words">
                       {system.manufacturer} {system.model}
                     </p>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
+                    <p className="mt-0.5 text-sm break-words text-muted-foreground">
                       {t("installedOn", {
                         date: formatDate(system.installedOn),
                       })}
                       {system.notes ? ` · ${system.notes}` : null}
                     </p>
                   </div>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="shrink-0 text-sm text-muted-foreground">
                     {tCommon("consumableCount", {
                       count: system.consumableCount,
                     })}

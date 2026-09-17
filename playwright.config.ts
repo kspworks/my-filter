@@ -57,6 +57,9 @@ export default defineConfig({
         // so the spec needs it to reach anything past the 401.
         CRON_SECRET: E2E_CRON_SECRET,
         MAIL_TRANSPORT: "log",
+        // Said out loud, not left to the default: Next loads `.env`, and a local
+        // `INVITE_ONLY="true"` would otherwise close sign-up for every spec here.
+        INVITE_ONLY: "false",
       },
     },
     ...(inviteOnly
@@ -90,12 +93,18 @@ export default defineConfig({
     },
     {
       name: "chromium",
-      testIgnore: /(anonymous|invites)\.spec\.ts$/,
+      testIgnore: /(anonymous|invites|mobile)\.spec\.ts$/,
       dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
         storageState: "e2e/.auth/user.json",
       },
+    },
+    // Registers its own account, so it needs neither `setup` nor its state.
+    {
+      name: "mobile",
+      testMatch: /mobile\.spec\.ts$/,
+      use: { ...devices["Pixel 7"] },
     },
     ...(inviteOnly
       ? [

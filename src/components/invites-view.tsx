@@ -169,7 +169,7 @@ export function InvitesView() {
                         <Input
                           readOnly
                           aria-label={t("linkLabel")}
-                          className="pl-8 font-mono text-xs"
+                          className="pl-8 font-mono text-base sm:text-xs"
                           value={linkFor(invite.token)}
                           onFocus={(event) => event.currentTarget.select()}
                         />

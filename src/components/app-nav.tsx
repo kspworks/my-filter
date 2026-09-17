@@ -43,13 +43,15 @@ export function AppNav({
 
   return (
     <header className="border-b border-border bg-card">
-      <div className="mx-auto flex w-full max-w-6xl items-center gap-6 px-6 py-3">
+      {/* Below `md` the links drop to a second row that scrolls sideways rather
+          than hiding behind a menu, so they stay one tap away. */}
+      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 sm:px-6 sm:py-3 md:flex-nowrap">
         <Link href="/" className="flex items-center gap-2 font-semibold">
           <Droplets className="size-5 text-brand" aria-hidden />
           {tApp("name")}
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="order-last -mx-4 flex w-[calc(100%+2rem)] items-center gap-1 overflow-x-auto px-4 sm:-mx-6 sm:w-[calc(100%+3rem)] sm:px-6 md:order-none md:mx-0 md:w-auto md:overflow-visible md:px-0">
           {(invitesEnabled ? [...LINKS, INVITES_LINK] : LINKS).map((link) => {
             const active =
               link.href === "/"
@@ -60,7 +62,7 @@ export function AppNav({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm transition-colors",
+                  "shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors",
                   active
                     ? "bg-muted font-medium text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -73,12 +75,20 @@ export function AppNav({
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
-          <span className="mr-2 text-sm text-muted-foreground">{userName}</span>
+          <span className="mr-2 hidden max-w-48 truncate text-sm text-muted-foreground sm:inline">
+            {userName}
+          </span>
           <LanguageSwitcher />
           <ThemeToggle />
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="max-sm:px-2"
+            onClick={handleSignOut}
+          >
             <LogOut aria-hidden />
-            {t("signOut")}
+            {/* Still the button's accessible name when only the icon shows. */}
+            <span className="sr-only sm:not-sr-only">{t("signOut")}</span>
           </Button>
         </div>
       </div>

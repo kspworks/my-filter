@@ -53,12 +53,12 @@ export function HistoryDialog({
               {entries.map((entry, index) => (
                 <li
                   key={entry.id}
-                  className="flex items-baseline justify-between rounded-md border border-border px-3 py-2 text-sm"
+                  className="flex items-baseline justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm"
                 >
                   <span className="font-medium">
                     {formatDate(entry.changedOn)}
                   </span>
-                  <span className="text-muted-foreground">
+                  <span className="text-right text-muted-foreground">
                     {/*
                       Which entry is the installation is a fact about position,
                       not a string in the database: `history` is newest-first,

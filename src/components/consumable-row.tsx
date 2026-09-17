@@ -165,10 +165,18 @@ export function ConsumableRow({
   const lastChanged = formatDate(consumable.lastChangedOn);
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3">
+    // On a phone: name and the menu on top, then the due date, then a
+    // full-width replace button — a translated badge is too long to share a
+    // line with it. Grid placement does nothing once `sm:flex` takes over, so
+    // the DOM order, and what a screen reader hears, is the same at every width.
+    // Alignment is not placement, though: `self-start` on the menu needs its
+    // `sm:self-auto`, or it applies to the desktop row as well.
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex sm:gap-4">
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="truncate font-medium">{consumable.name}</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap">
+          <span className="min-w-0 truncate font-medium">
+            {consumable.name}
+          </span>
           <Badge variant="secondary">
             {labels.consumableType(consumable.type)}
           </Badge>
@@ -195,20 +203,20 @@ export function ConsumableRow({
         </p>
       </div>
 
-      <div className="w-40 text-right">
+      <div className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:block sm:w-40 sm:text-right">
         <div className="text-sm font-medium">{formatDate(due.nextDueOn)}</div>
         <DueBadge
           status={due.status}
           daysUntilDue={due.daysUntilDue}
-          className="mt-1"
+          className="sm:mt-1"
         />
       </div>
 
-      <div className="flex items-center">
+      <div className="col-span-2 row-start-3 flex items-center">
         <Button
           size="sm"
           variant="outline"
-          className="rounded-r-none"
+          className="flex-1 rounded-r-none sm:flex-none"
           disabled={markReplacedMutation.isPending}
           aria-busy={replacingToday}
           onClick={() =>
@@ -268,7 +276,12 @@ export function ConsumableRow({
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button size="icon" variant="ghost" aria-label={t("moreActions")}>
+          <Button
+            size="icon"
+            variant="ghost"
+            aria-label={t("moreActions")}
+            className="col-start-2 row-start-1 self-start justify-self-end sm:self-auto"
+          >
             <ChevronDown aria-hidden />
           </Button>
         </DropdownMenuTrigger>
