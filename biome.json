@@ -13,7 +13,8 @@
       "!.next",
       "!dist",
       "!build",
-      "!vercel.json"
+      "!vercel.json",
+      "!.pnpm-store/**/*"
     ]
   },
   "formatter": {
