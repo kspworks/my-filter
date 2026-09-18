@@ -183,8 +183,7 @@ not a cookie: reading a cookie in the root layout opts the whole app out of prer
 
 ## Operational scripts
 
-`scripts/` holds the things run by hand: `db:seed`, `db:backfill-locales`, `db:backup` and
-`db:delete-user`. They are `tsx` entry points, so no top-level `await` — tsx compiles to CJS
+`scripts/` holds the things run by hand: `db:seed`, `db:backup` and `db:delete-user`. They are `tsx` entry points, so no top-level `await` — tsx compiles to CJS
 here — and the logic they need lives under `src/` instead, where Vitest can reach it
 (`include: ["src/**/*.test.ts"]`). Neither `~/server/db/dump.ts` nor
 `~/server/db/delete-user.ts` imports the `db` singleton: they take a handle as a parameter,

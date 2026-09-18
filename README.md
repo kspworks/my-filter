@@ -66,7 +66,6 @@ never emails this account, so it is safe to seed in production for demonstration
 | `pnpm db:migrate` | Apply migrations |
 | `pnpm db:studio` | Drizzle Studio |
 | `pnpm db:seed` | Reset and seed the demo account |
-| `pnpm db:backfill-locales` | Give every existing account a language, once |
 | `pnpm db:backup` | Write a restorable SQL dump into `./data/` |
 | `pnpm db:delete-user` | Delete one account and all of its data |
 | `pnpm check-updates` | List dependency upgrades (npm-check-updates) |

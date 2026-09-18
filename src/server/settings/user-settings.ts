@@ -29,8 +29,8 @@ export async function saveUserLocale(
 }
 
 /**
- * Records a guess — `Accept-Language`, or the backfill. Never overwrites: a
- * header is evidence about a browser, not about what somebody chose.
+ * Records a guess — `Accept-Language`. Never overwrites: a header is evidence
+ * about a browser, not about what somebody chose.
  */
 export async function defaultUserLocale(
   db: DbOrTransaction,

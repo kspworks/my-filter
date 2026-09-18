@@ -67,7 +67,6 @@ pnpm dev
 | `pnpm db:migrate` | Застосувати міграції |
 | `pnpm db:studio` | Drizzle Studio |
 | `pnpm db:seed` | Перестворити демо-акаунт із даними |
-| `pnpm db:backfill-locales` | Одноразово задати мову всім наявним акаунтам |
 | `pnpm db:backup` | Зберегти SQL-дамп для відновлення в `./data/` |
 | `pnpm db:delete-user` | Видалити акаунт разом з усіма його даними |
 | `pnpm check-updates` | Показати доступні оновлення залежностей (npm-check-updates) |
