@@ -2,11 +2,9 @@ blockExoticSubdeps: true
 
 minimumReleaseAge: 1440
 
-onlyBuiltDependencies:
-  - esbuild
-
-ignoredBuiltDependencies:
-  - '@parcel/watcher'
-  - '@swc/core'
-  - sharp
-  - unrs-resolver
+allowBuilds:
+  esbuild: true
+  '@parcel/watcher': false
+  '@swc/core': false
+  sharp: false
+  unrs-resolver: false
