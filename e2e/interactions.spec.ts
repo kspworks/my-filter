@@ -74,12 +74,18 @@ test("detaches and re-attaches through the row menu", async ({ page }) => {
   await page.goto("/consumables");
 
   await page.getByRole("button", { name: "More actions" }).first().click();
+  // Attached, so the menu offers no way to move it straight to another system.
+  await expect(
+    page.getByRole("menuitem", { name: `${MANUFACTURER} IX-1` }),
+  ).toHaveCount(0);
   await page.getByRole("menuitem", { name: "Detach" }).click();
   await expect(
     page.getByText("Detached. The item is now unassigned."),
   ).toBeVisible();
 
   await page.getByRole("button", { name: "More actions" }).first().click();
+  // And now that it is free, nothing to detach from.
+  await expect(page.getByRole("menuitem", { name: "Detach" })).toHaveCount(0);
   await page.getByRole("menuitem", { name: `${MANUFACTURER} IX-1` }).click();
   await expect(page.getByText("Attached.")).toBeVisible();
 });

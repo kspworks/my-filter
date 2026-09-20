@@ -155,10 +155,6 @@ export function ConsumableRow({
     }),
   );
 
-  const otherSystems = systems.filter(
-    (system) => system.id !== consumable.systemId,
-  );
-
   const interval = labels.interval(
     consumable.intervalValue,
     consumable.intervalUnit,
@@ -313,30 +309,44 @@ export function ConsumableRow({
             {t("history")}
           </DropdownMenuItem>
 
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel>{t("attachment")}</DropdownMenuLabel>
+          {/*
+            The two directions are exclusive. Attaching an already-attached
+            cartridge somewhere else is a move, and a move is worth two
+            deliberate steps — detach, then attach — rather than one click that
+            leaves no sign it used to sit on another system. With no systems at
+            all there is nothing to head, so the section itself goes away.
+          */}
           {consumable.systemId ? (
-            <DropdownMenuItem
-              onSelect={() => detachMutation.mutate({ id: consumable.id })}
-            >
-              <Link2Off aria-hidden />
-              {t("detach")}
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>{t("attachment")}</DropdownMenuLabel>
+              <DropdownMenuItem
+                onSelect={() => detachMutation.mutate({ id: consumable.id })}
+              >
+                <Link2Off aria-hidden />
+                {t("detach")}
+              </DropdownMenuItem>
+            </>
+          ) : systems.length > 0 ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel>{t("attachment")}</DropdownMenuLabel>
+              {systems.map((system) => (
+                <DropdownMenuItem
+                  key={system.id}
+                  onSelect={() =>
+                    attachMutation.mutate({
+                      id: consumable.id,
+                      systemId: system.id,
+                    })
+                  }
+                >
+                  <Link2 aria-hidden />
+                  {system.manufacturer} {system.model}
+                </DropdownMenuItem>
+              ))}
+            </>
           ) : null}
-          {otherSystems.map((system) => (
-            <DropdownMenuItem
-              key={system.id}
-              onSelect={() =>
-                attachMutation.mutate({
-                  id: consumable.id,
-                  systemId: system.id,
-                })
-              }
-            >
-              <Link2 aria-hidden />
-              {system.manufacturer} {system.model}
-            </DropdownMenuItem>
-          ))}
 
           <DropdownMenuSeparator />
           <DropdownMenuItem
