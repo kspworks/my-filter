@@ -123,6 +123,7 @@
     "replaceOnAnotherDate": "Вказати іншу дату заміни",
     "replacedOn": "Дата заміни",
     "moreActions": "Інші дії",
+    "orderReplacement": "Замовити заміну",
     "history": "Історія",
     "attachment": "Прив’язка",
     "detach": "Від’єднати",
@@ -140,7 +141,9 @@
       "intervalUnit": "Одиниця інтервалу",
       "lastChangedOn": "Встановлено / остання заміна",
       "system": "Система",
-      "unassignedOption": "Без системи (запас)"
+      "unassignedOption": "Без системи (запас)",
+      "productUrl": "Де замовити",
+      "productUrlPlaceholder": "https://shop.example.com/cartridge"
     },
     "toast": {
       "added": "Картридж додано.",

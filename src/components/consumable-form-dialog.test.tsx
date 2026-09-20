@@ -131,6 +131,22 @@ describe("creating", () => {
     expect(onOpenChange).not.toHaveBeenCalledWith(false);
   });
 
+  it("saves the order link it was given", async () => {
+    const actor = user();
+    app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);
+
+    await actor.type(screen.getByLabelText("Name"), "Sediment PP");
+    await actor.type(
+      screen.getByLabelText("Where to order"),
+      "https://shop.example.com/sediment-pp",
+    );
+    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+
+    await screen.findByText("Consumable added.");
+    const [created] = await app.caller.consumables.list();
+    expect(created?.productUrl).toBe("https://shop.example.com/sediment-pp");
+  });
+
   it("turns a rejection the form cannot catch into an error toast", async () => {
     const actor = user();
     app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);
@@ -204,5 +220,35 @@ describe("editing", () => {
       name: "Membrane 50 GPD",
       lastChangedOn: "2026-01-10",
     });
+  });
+
+  it("adds an order link to a cartridge that had none", async () => {
+    const actor = user();
+    const consumable = await app.caller.consumables.create({
+      type: "membrane",
+      name: "Membrane",
+      intervalValue: 24,
+      intervalUnit: "months",
+      lastChangedOn: "2026-01-10",
+    });
+
+    app.render(
+      <ConsumableFormDialog
+        open
+        onOpenChange={onOpenChange}
+        consumable={consumable}
+      />,
+    );
+
+    expect(screen.getByLabelText("Where to order")).toHaveValue("");
+    await actor.type(
+      screen.getByLabelText("Where to order"),
+      "https://shop.example.com/membrane",
+    );
+    await actor.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(await screen.findByText("Consumable updated.")).toBeInTheDocument();
+    const [updated] = await app.caller.consumables.list();
+    expect(updated?.productUrl).toBe("https://shop.example.com/membrane");
   });
 });

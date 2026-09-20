@@ -64,6 +64,9 @@ export const consumables = sqliteTable(
     // Always set: at creation it defaults to the system's installation date, which
     // keeps null-handling out of every due-date calculation downstream.
     lastChangedOn: text("last_changed_on").notNull(),
+    // Where this cartridge was bought, so ordering a replacement is one click
+    // from the row. Validated as http(s) at the edge; never rendered as markup.
+    productUrl: text("product_url"),
     notes: text("notes"),
     ...timestamps,
   },

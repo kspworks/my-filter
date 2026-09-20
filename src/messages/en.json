@@ -123,6 +123,7 @@
     "replaceOnAnotherDate": "Replace on another date",
     "replacedOn": "Replaced on",
     "moreActions": "More actions",
+    "orderReplacement": "Order replacement",
     "history": "History",
     "attachment": "Attachment",
     "detach": "Detach",
@@ -140,7 +141,9 @@
       "intervalUnit": "Interval unit",
       "lastChangedOn": "Installed / last changed",
       "system": "System",
-      "unassignedOption": "Unassigned (spare)"
+      "unassignedOption": "Unassigned (spare)",
+      "productUrl": "Where to order",
+      "productUrlPlaceholder": "https://shop.example.com/cartridge"
     },
     "toast": {
       "added": "Consumable added.",

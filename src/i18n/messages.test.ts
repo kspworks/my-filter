@@ -53,13 +53,15 @@ describe("message catalogues", () => {
     ]);
 
     // The only keys allowed to read the same in both languages: each language
-    // is named in its own tongue, and the two form placeholders are a real
-    // manufacturer and model, not prose.
+    // is named in its own tongue, and the form placeholders are a real
+    // manufacturer, model and URL, not prose.
     const shared = new Set([
       "settings.language.en",
       "settings.language.uk",
       "systems.form.manufacturerPlaceholder",
       "systems.form.modelPlaceholder",
+      // A URL, not prose.
+      "consumables.form.productUrlPlaceholder",
     ]);
 
     const identical = Object.keys(en).filter(

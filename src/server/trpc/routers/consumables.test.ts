@@ -190,6 +190,60 @@ describe("update", () => {
   });
 });
 
+describe("product link", () => {
+  const SHOP = "https://shop.example.com/sediment-pp";
+
+  it("round-trips the link it was given", async () => {
+    const consumable = await caller.consumables.create({
+      ...CARTRIDGE,
+      productUrl: SHOP,
+    });
+
+    expect(consumable.productUrl).toBe(SHOP);
+    const [listed] = await caller.consumables.list();
+    expect(listed?.productUrl).toBe(SHOP);
+  });
+
+  it("defaults to no link", async () => {
+    expect((await caller.consumables.create(CARTRIDGE)).productUrl).toBeNull();
+  });
+
+  // The value ends up in an `href`, so anything but http(s) is refused at the
+  // edge rather than sanitized where it is rendered.
+  it("refuses a scheme a browser would not navigate to", async () => {
+    for (const productUrl of [
+      "javascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "shop.example.com",
+      "not a url",
+    ]) {
+      await expect(
+        caller.consumables.create({ ...CARTRIDGE, productUrl }),
+      ).rejects.toThrow();
+    }
+  });
+
+  it("can be added to, and cleared from, an existing cartridge", async () => {
+    const consumable = await caller.consumables.create(CARTRIDGE);
+    const edit = {
+      id: consumable.id,
+      type: CARTRIDGE.type,
+      name: CARTRIDGE.name,
+      intervalValue: CARTRIDGE.intervalValue,
+      intervalUnit: CARTRIDGE.intervalUnit,
+    };
+
+    expect(
+      (await caller.consumables.update({ ...edit, productUrl: SHOP }))
+        .productUrl,
+    ).toBe(SHOP);
+    expect(
+      (await caller.consumables.update({ ...edit, productUrl: null }))
+        .productUrl,
+    ).toBeNull();
+  });
+});
+
 describe("attach and detach", () => {
   it("moves a cartridge onto a system and back off it", async () => {
     const system = await aSystem();

@@ -21,6 +21,9 @@ const consumableFields = {
   name: z.string().trim().min(1).max(120),
   intervalValue: z.int().min(1).max(600),
   intervalUnit: z.enum(INTERVAL_UNITS),
+  // `httpUrl` rather than `url`: the latter accepts any parseable scheme, and
+  // this value ends up in an `href`.
+  productUrl: z.httpUrl().max(2000).nullish(),
   notes: z.string().trim().max(2000).nullish(),
 };
 
@@ -33,6 +36,7 @@ const consumableColumns = {
   intervalValue: consumables.intervalValue,
   intervalUnit: consumables.intervalUnit,
   lastChangedOn: consumables.lastChangedOn,
+  productUrl: consumables.productUrl,
   notes: consumables.notes,
 };
 
@@ -146,6 +150,7 @@ export const consumablesRouter = router({
             intervalValue: input.intervalValue,
             intervalUnit: input.intervalUnit,
             lastChangedOn: input.lastChangedOn,
+            productUrl: input.productUrl ?? null,
             notes: input.notes ?? null,
           })
           .returning(consumableColumns);
@@ -177,6 +182,7 @@ export const consumablesRouter = router({
           name: input.name,
           intervalValue: input.intervalValue,
           intervalUnit: input.intervalUnit,
+          productUrl: input.productUrl ?? null,
           notes: input.notes ?? null,
         })
         .where(

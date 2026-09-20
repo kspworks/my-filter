@@ -46,6 +46,7 @@ export type ConsumableDraft = {
   intervalValue: number;
   intervalUnit: IntervalUnit;
   lastChangedOn: string;
+  productUrl: string | null;
   notes: string | null;
 };
 
@@ -88,6 +89,7 @@ export function ConsumableFormDialog({
   const [systemId, setSystemId] = useState(
     consumable?.systemId ?? defaultSystemId ?? UNASSIGNED,
   );
+  const [productUrl, setProductUrl] = useState(consumable?.productUrl ?? "");
   const [notes, setNotes] = useState(consumable?.notes ?? "");
 
   const finish = async (message: string) => {
@@ -119,6 +121,7 @@ export function ConsumableFormDialog({
       name: name.trim(),
       intervalValue: Number(intervalValue),
       intervalUnit,
+      productUrl: productUrl.trim() || null,
       notes: notes.trim() || null,
     };
 
@@ -249,6 +252,24 @@ export function ConsumableFormDialog({
                 </div>
               </>
             )}
+
+            <div className="grid gap-2">
+              <Label htmlFor="consumable-product-url">
+                {t("form.productUrl")}
+              </Label>
+              {/*
+                `type="url"` so the browser refuses a bare domain before the
+                mutation fires; the router then insists on http(s).
+              */}
+              <Input
+                id="consumable-product-url"
+                type="url"
+                maxLength={2000}
+                placeholder={t("form.productUrlPlaceholder")}
+                value={productUrl}
+                onChange={(event) => setProductUrl(event.target.value)}
+              />
+            </div>
 
             <div className="grid gap-2">
               <Label htmlFor="consumable-notes">{tCommon("notes")}</Label>

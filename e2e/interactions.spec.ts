@@ -96,3 +96,32 @@ test("opens the service history from the row menu", async ({ page }) => {
   await expect(dialog.getByRole("listitem")).toHaveCount(2);
   await expect(dialog.getByText("Installed")).toBeVisible();
 });
+
+test("offers the order link in the row menu once there is one", async ({
+  page,
+}) => {
+  await page.goto("/consumables");
+
+  // Nothing to order yet, so the item is not there at all.
+  await page.getByRole("button", { name: "More actions" }).first().click();
+  await expect(
+    page.getByRole("menuitem", { name: "Order replacement" }),
+  ).toHaveCount(0);
+
+  await page.getByRole("menuitem", { name: "Edit" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog
+    .getByLabel("Where to order")
+    .fill("https://shop.example.com/interaction-membrane");
+  await dialog.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Consumable updated.")).toBeVisible();
+
+  await page.getByRole("button", { name: "More actions" }).first().click();
+  // Asserted rather than clicked: following it would leave the app.
+  await expect(
+    page.getByRole("menuitem", { name: "Order replacement" }),
+  ).toHaveAttribute("href", "https://shop.example.com/interaction-membrane");
+  await expect(
+    page.getByRole("menuitem", { name: "Order replacement" }),
+  ).toHaveAttribute("target", "_blank");
+});

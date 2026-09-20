@@ -8,6 +8,7 @@ import {
   Link2Off,
   Pencil,
   RotateCcw,
+  ShoppingCart,
   Trash2,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -286,6 +287,23 @@ export function ConsumableRow({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {/*
+            A real anchor rather than an `onSelect` that opens a window: it
+            keeps middle-click, and a new tab from a user gesture is never a
+            popup. The URL is http(s) by the time it is stored.
+          */}
+          {consumable.productUrl ? (
+            <DropdownMenuItem asChild>
+              <a
+                href={consumable.productUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <ShoppingCart aria-hidden />
+                {t("orderReplacement")}
+              </a>
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem onSelect={() => setEditing(true)}>
             <Pencil aria-hidden />
             {tCommon("edit")}
