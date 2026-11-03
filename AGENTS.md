@@ -63,7 +63,7 @@ The active locale lives in a **cookie**, not the URL. There is no `[locale]` seg
 Component renders.
 
 The cookie is per-browser, so it is invisible to anything running without a request — which
-means the daily digest. `setLocale` therefore *also* writes `user_settings.locale`, and so
+means the daily digest. `setLocale` therefore _also_ writes `user_settings.locale`, and so
 does the sign-in hook in `src/server/auth.ts`. The cookie stays authoritative for rendering;
 the row exists only so a background job knows what language to write in. Two writers, and
 the difference between them is load-bearing: `saveUserLocale` records a **choice** and
@@ -72,7 +72,7 @@ that says nothing writes nothing at all — a default written down is indistingu
 choice afterwards, and would block every later, better signal.
 
 The jsdom project aliases `~/i18n/set-locale` to a stub for two reasons now: the real
-module's `cookies()` throws outside a request scope, *and* it reaches `~/server/db`, which
+module's `cookies()` throws outside a request scope, _and_ it reaches `~/server/db`, which
 would drag `src/env.ts` into every component test that renders the language switcher or the
 register form.
 
@@ -100,7 +100,7 @@ which reads the locale off the request's `Cookie` header). Do **not** reach for
 directly through `createCallerFactory`, where no request scope exists.
 
 Keep display text out of the database. `consumables.name` is user data: `applyPreset`
-resolves a preset's cartridge name in the caller's language *once*, at creation, and never
+resolves a preset's cartridge name in the caller's language _once_, at creation, and never
 re-translates it. The replacement log stores no label at all — which entry is the
 installation, the most recent or a plain replacement is derived from its position.
 
@@ -111,7 +111,7 @@ notice on the day itself, combined into one message when both apply — `src/ser
 (transport) and `src/server/notifications` (the job), behind a Vercel cron at `0 9 * * *`.
 
 **The sent-log is the mechanism, not a record of one.** `notification_log` has a unique index
-on `(consumable_id, kind, due_on)`, and `run.ts` *claims* rows with
+on `(consumable_id, kind, due_on)`, and `run.ts` _claims_ rows with
 `onConflictDoNothing().returning()` — a row that comes back is a notice nobody has sent.
 Never re-derive "already sent" from dates: matching an exact day instead loses a reminder
 permanently whenever a run fails, and says nothing about cartridges that were already
@@ -121,7 +121,7 @@ day's delay rather than a lost or duplicated email.
 **The cron is the one place the server decides what "today" is.** Everywhere else that is
 the viewer's own (`~/lib/use-today`), deliberately, because the server's timezone is not
 theirs — but a background job has no viewer. `todayInTimeZone(DIGEST_TIME_ZONE, …)` resolves
-it in `Europe/Kyiv`, so the schedule drifting an hour across DST never changes *which*
+it in `Europe/Kyiv`, so the schedule drifting an hour across DST never changes _which_
 cartridges are reported. This is a considered inversion of the rule above, not an oversight.
 
 `MAIL_TRANSPORT` defaults to `"log"`, so `next build`, CI and a fresh clone all work with no
@@ -131,7 +131,7 @@ real `Request` without importing the database singleton. Adding a provider is on
 implementing `MailTransport` and one arm in `create-transport`.
 
 Never filter recipients on `user.emailVerified` — nothing in this app ever sets it true.
-The one recipient that *is* filtered is the seeded demo account (`DEMO_EMAIL` in
+The one recipient that _is_ filtered is the seeded demo account (`DEMO_EMAIL` in
 `~/lib/demo`), in `loadNotifiable` itself, so it is never a candidate nor a claim.
 
 ## Invites
@@ -205,7 +205,7 @@ purpose: no `user_id`, and nothing in this app writes to it.
 The backup is a SQL dump rather than a file copy because there is no portable way to get a
 binary one: `@libsql/client` cannot copy a Turso database, and `turso`/`sqlite3` are not
 dependencies. `RESTORE_PREAMBLE` is exported separately from the dump body for a reason —
-SQLite ignores `PRAGMA foreign_keys` inside a transaction, so it has to be written *above*
+SQLite ignores `PRAGMA foreign_keys` inside a transaction, so it has to be written _above_
 the `BEGIN` the file wraps everything else in.
 
 ## Tests
@@ -235,7 +235,7 @@ Rules worth knowing before writing one:
 
 - **Seed through `app.caller`, never raw inserts with invented ids.** `zId` is
   `refine(isCuid)`, so `"sys-1"` is rejected — and `isCuid` is a loose heuristic that
-  *accepts* a bare word like `"nope"`, so pick genuinely malformed ids (a hyphen works) when
+  _accepts_ a bare word like `"nope"`, so pick genuinely malformed ids (a hyphen works) when
   testing rejection.
 - **After anything that triggers a query or mutation, assert with `findBy*` / `waitFor`.**
   The local link resolves on a microtask, so a bare `getBy*` both flakes and warns about

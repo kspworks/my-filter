@@ -50,25 +50,25 @@ never emails this account, so it is safe to seed in production for demonstration
 
 ## Scripts
 
-| Command | What it does |
-| --- | --- |
-| `pnpm dev` | Dev server on http://localhost:3000 |
-| `pnpm build` / `pnpm start` | Production build (`biome ci` first, so lint errors fail it) / serve |
-| `pnpm typecheck` | `next typegen && tsc --noEmit` |
-| `pnpm lint` / `pnpm lint:fix` | Biome check (and autofix) |
-| `pnpm format` | Biome formatter only |
-| `pnpm test` / `pnpm test:watch` | Vitest — unit, router/database integration and component tests |
-| `pnpm test:coverage` | The same, with a coverage report and thresholds |
-| `pnpm test:e2e` / `pnpm test:e2e:ui` | Playwright against a production build (headless / UI mode) |
-| `pnpm test:e2e:db` | Rebuild the throwaway e2e database in `./.e2e/` (Playwright does this itself) |
-| `pnpm test:all` | Both suites |
-| `pnpm db:generate` | Create a migration from schema changes |
-| `pnpm db:migrate` | Apply migrations |
-| `pnpm db:studio` | Drizzle Studio |
-| `pnpm db:seed` | Reset and seed the demo account |
-| `pnpm db:backup` | Write a restorable SQL dump into `./data/` |
-| `pnpm db:delete-user` | Delete one account and all of its data |
-| `pnpm check-updates` | List dependency upgrades (npm-check-updates) |
+| Command                              | What it does                                                                  |
+| ------------------------------------ | ----------------------------------------------------------------------------- |
+| `pnpm dev`                           | Dev server on http://localhost:3000                                           |
+| `pnpm build` / `pnpm start`          | Production build (`biome ci` first, so lint errors fail it) / serve           |
+| `pnpm typecheck`                     | `next typegen && tsc --noEmit`                                                |
+| `pnpm lint` / `pnpm lint:fix`        | Biome check (and autofix)                                                     |
+| `pnpm format`                        | Biome formatter only                                                          |
+| `pnpm test` / `pnpm test:watch`      | Vitest — unit, router/database integration and component tests                |
+| `pnpm test:coverage`                 | The same, with a coverage report and thresholds                               |
+| `pnpm test:e2e` / `pnpm test:e2e:ui` | Playwright against a production build (headless / UI mode)                    |
+| `pnpm test:e2e:db`                   | Rebuild the throwaway e2e database in `./.e2e/` (Playwright does this itself) |
+| `pnpm test:all`                      | Both suites                                                                   |
+| `pnpm db:generate`                   | Create a migration from schema changes                                        |
+| `pnpm db:migrate`                    | Apply migrations                                                              |
+| `pnpm db:studio`                     | Drizzle Studio                                                                |
+| `pnpm db:seed`                       | Reset and seed the demo account                                               |
+| `pnpm db:backup`                     | Write a restorable SQL dump into `./data/`                                    |
+| `pnpm db:delete-user`                | Delete one account and all of its data                                        |
+| `pnpm check-updates`                 | List dependency upgrades (npm-check-updates)                                  |
 
 The app icons (`src/app/icon.svg`, `favicon.ico`, `apple-icon.png`) are committed files drawn
 from the header's Droplets mark. After changing the mark or `--brand`, regenerate them with
@@ -76,8 +76,8 @@ from the header's Droplets mark. After changing the mark or `--brand`, regenerat
 
 ## How it is put together
 
-**Data model.** A *system* is a filter unit (manufacturer, model, installation date). A
-*consumable* is a physical cartridge with its own service interval, owned by the user and
+**Data model.** A _system_ is a filter unit (manufacturer, model, installation date). A
+_consumable_ is a physical cartridge with its own service interval, owned by the user and
 optionally attached to one system — detaching leaves it on an "Unassigned" shelf rather
 than deleting it. Deleting a system detaches its consumables instead of destroying them.
 
@@ -90,7 +90,7 @@ built on.
 ownership is enforced on every single query rather than modelled as permissions. Another
 user's row is indistinguishable from one that does not exist (`NOT_FOUND`, not
 `FORBIDDEN`). `src/server/trpc/routers/ownership.test.ts` holds that line, and
-`auth-gate.test.ts` walks the router so every *new* procedure is checked the day it lands.
+`auth-gate.test.ts` walks the router so every _new_ procedure is checked the day it lands.
 
 **Tests.** The suite is built to be run after a dependency upgrade, so it leans on real
 seams rather than mocks. Router tests run against an in-memory SQLite built from the actual
@@ -116,11 +116,11 @@ timezone. The daily digest is the one exception — it has no viewer — and is 
 
 `DATABASE_URL` is the only thing that changes between environments:
 
-| Environment | `DATABASE_URL` |
-| --- | --- |
-| Local | `file:./data/my-filter.db` |
-| Tests | `:memory:` |
-| Production | `libsql://<db>.turso.io` + `DATABASE_AUTH_TOKEN` |
+| Environment | `DATABASE_URL`                                   |
+| ----------- | ------------------------------------------------ |
+| Local       | `file:./data/my-filter.db`                       |
+| Tests       | `:memory:`                                       |
+| Production  | `libsql://<db>.turso.io` + `DATABASE_AUTH_TOKEN` |
 
 A file-backed SQLite cannot be the production store on serverless hosts (the filesystem is
 ephemeral), which is why the app talks to libSQL from the start. To deploy on Vercel:
@@ -147,12 +147,12 @@ schedule shifting an hour across DST never changes what is reported.
 Each notice is claimed in `notification_log` before it is sent and released if sending fails,
 so a failed run delays a reminder by a day rather than losing or duplicating it.
 
-| Variable | |
-| --- | --- |
-| `CRON_SECRET` | Vercel sends it as a bearer token. Unset, the endpoint refuses every request. |
-| `MAIL_TRANSPORT` | `log` (default) writes the email to the server log; `gmail` sends it. |
+| Variable                            |                                                                                                             |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `CRON_SECRET`                       | Vercel sends it as a bearer token. Unset, the endpoint refuses every request.                               |
+| `MAIL_TRANSPORT`                    | `log` (default) writes the email to the server log; `gmail` sends it.                                       |
 | `GMAIL_USER` / `GMAIL_APP_PASSWORD` | For `gmail`. An [App Password](https://myaccount.google.com/apppasswords), which needs 2-Step Verification. |
-| `MAIL_FROM` | Optional; defaults to `GMAIL_USER`. |
+| `MAIL_FROM`                         | Optional; defaults to `GMAIL_USER`.                                                                         |
 
 Because `log` is the default, local development, CI and a fresh clone need no mail secrets.
 
@@ -196,7 +196,7 @@ so a restored copy does not try to re-apply every migration.
 ### Deleting an account
 
 `pnpm db:delete-user <id or email>` prints what it would remove and stops. `--confirm` makes
-it real; against a remote `DATABASE_URL` it *also* asks for the account's email to be typed
+it real; against a remote `DATABASE_URL` it _also_ asks for the account's email to be typed
 back, and refuses outright with no terminal to ask in unless `--yes` says that is deliberate.
 `NODE_ENV` is no help there — a script run from a laptop against Turso is "development" by
 every measure Node has — so a non-`file:` URL is what stands in for production.
@@ -210,13 +210,13 @@ Ukrainian without a redirect.
 
 Getting Ukrainian right is mostly about **plurals**. It has four categories where English
 has two, and the `one` category includes 21 and 101 — so "in 1 day / in 3 days" is
-*через 1 день / через 3 дні / через 5 днів / через 21 день*. Every count therefore goes
+_через 1 день / через 3 дні / через 5 днів / через 21 день_. Every count therefore goes
 through an ICU message rather than a `=== 1` check, and `src/i18n/messages.test.ts` asserts
 the forms at 1, 3, 5, 11, 21 and 22. The same test fails the build if the two catalogues
 drift apart or an ICU message stops compiling.
 
 Translating never touches stored data. Enum-like values were already stable keys, and the
-two places that *did* write English into the database have been fixed: applying a preset
+two places that _did_ write English into the database have been fixed: applying a preset
 now creates cartridges named in the user's own language (ordinary, editable user data from
 then on), and the replacement log stores no label at all — whether an entry is the
 installation, the most recent, or a plain replacement follows from its position.
