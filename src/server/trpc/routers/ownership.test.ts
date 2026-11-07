@@ -134,6 +134,25 @@ describe("cross-user access", () => {
   });
 });
 
+describe("cross-user access to the replacement log", () => {
+  it("hides another user's log entry", async () => {
+    const { caller, consumable } = await aliceWithSystemAndConsumable();
+    await caller.consumables.markReplaced({
+      id: consumable.id,
+      changedOn: "2026-07-01",
+    });
+    const [newest] = await caller.consumables.history({ id: consumable.id });
+    const mallory = await callerFor(db, bob);
+
+    await expect(
+      mallory.consumables.deleteReplacement({ id: newest?.id ?? "" }),
+    ).rejects.toThrow(/not found/i);
+    expect(
+      await caller.consumables.history({ id: consumable.id }),
+    ).toHaveLength(2);
+  });
+});
+
 describe("replacement log", () => {
   it("moves the schedule forward and records history", async () => {
     const { caller, consumable } = await aliceWithSystemAndConsumable();
@@ -166,6 +185,63 @@ describe("replacement log", () => {
     expect(
       await caller.consumables.history({ id: consumable.id }),
     ).toHaveLength(1);
+  });
+
+  it("deletes an entry from the middle and keeps the schedule", async () => {
+    const { caller, consumable } = await aliceWithSystemAndConsumable();
+    await caller.consumables.markReplaced({
+      id: consumable.id,
+      changedOn: "2026-03-01",
+    });
+    await caller.consumables.markReplaced({
+      id: consumable.id,
+      changedOn: "2026-07-01",
+    });
+    const [, middle] = await caller.consumables.history({ id: consumable.id });
+
+    const updated = await caller.consumables.deleteReplacement({
+      id: middle?.id ?? "",
+    });
+
+    expect(updated.lastChangedOn).toBe("2026-07-01");
+    expect(
+      (await caller.consumables.history({ id: consumable.id })).map(
+        (entry) => entry.changedOn,
+      ),
+    ).toEqual(["2026-07-01", "2026-01-10"]);
+  });
+
+  it("deleting the newest entry moves the schedule back", async () => {
+    const { caller, consumable } = await aliceWithSystemAndConsumable();
+    await caller.consumables.markReplaced({
+      id: consumable.id,
+      changedOn: "2026-07-01",
+    });
+    const [newest] = await caller.consumables.history({ id: consumable.id });
+
+    const updated = await caller.consumables.deleteReplacement({
+      id: newest?.id ?? "",
+    });
+
+    expect(updated.lastChangedOn).toBe("2026-01-10");
+    const [listed] = await caller.consumables.list();
+    expect(listed?.lastChangedOn).toBe("2026-01-10");
+  });
+
+  it("will not delete the installation, even with later entries", async () => {
+    const { caller, consumable } = await aliceWithSystemAndConsumable();
+    await caller.consumables.markReplaced({
+      id: consumable.id,
+      changedOn: "2026-07-01",
+    });
+    const history = await caller.consumables.history({ id: consumable.id });
+
+    await expect(
+      caller.consumables.deleteReplacement({ id: history.at(-1)?.id ?? "" }),
+    ).rejects.toThrow(/installation/i);
+    expect(
+      await caller.consumables.history({ id: consumable.id }),
+    ).toHaveLength(2);
   });
 
   it("keeps the original installation entry", async () => {

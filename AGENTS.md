@@ -50,6 +50,19 @@ Anything touching a `systemId` from input must call `assertOwnsSystem` first.
 `consumable_replacements`. Any write that touches the log must end with `syncLastChanged`
 inside the same transaction, so the two can never drift.
 
+`undoLastReplacement` serves the toast and `deleteReplacement` serves the history dialog,
+which is the only way to fix a mistake once the toast has gone. Neither removes the oldest
+entry: that row is the installation, every due date is anchored to it, and it is defined by
+position, so "the oldest" means `replacementLog`'s last row and nothing else.
+
+## Load failures
+
+A failed query has no data, and no data renders as an empty account, so every view branches
+on `isLoadingError` and shows `~/components/load-error` before it looks at the data. Not
+`isError`: that is also true when a background refetch fails, and the rows already on screen
+are better than an error. The system page is the one place that reads the error's code,
+because `NOT_FOUND` there is an answer rather than a failure.
+
 ## i18n
 
 English and Ukrainian, via next-intl. Message catalogues are `src/messages/{en,uk}.json`
@@ -229,7 +242,9 @@ which is never imported by app code.
   The tRPC client is built on `unstable_localLink`, so a component's `useQuery` runs the
   **real** router, Zod parse and SQL. There is no fetch mocking and there are no fixtures to
   drift. That link resolves on a microtask, so a pending state never renders on its own:
-  `app.holdMutations()` parks mutations until the `release` it returns is called.
+  `app.holdMutations()` parks mutations until the `release` it returns is called, and
+  `app.failQueries()` fails queries the way a dropped connection does until `restore` is
+  called.
 
 Rules worth knowing before writing one:
 

@@ -33,7 +33,12 @@
     "cannotBeUndone": "This cannot be undone.",
     "notes": "Notes",
     "itemCount": "{count, plural, one {# item} other {# items}}",
-    "consumableCount": "{count, plural, one {# consumable} other {# consumables}}"
+    "consumableCount": "{count, plural, one {# consumable} other {# consumables}}",
+    "loadError": {
+      "title": "Couldn’t load your data",
+      "body": "Your cartridges are still saved. Check your connection and try again.",
+      "retry": "Try again"
+    }
   },
   "consumableType": {
     "sediment": "Sediment (PP)",
@@ -160,7 +165,12 @@
     "title": "Service history",
     "installed": "Installed",
     "mostRecent": "Most recent",
-    "replaced": "Replaced"
+    "replaced": "Replaced",
+    "correctionHint": "Marked one by mistake? Delete that entry and the schedule recalculates.",
+    "deleteEntry": "Delete the entry from {date}",
+    "deleteTitle": "Delete the entry from {date}?",
+    "deleteBody": "The next due date will be recalculated from the remaining entries. This cannot be undone.",
+    "deleted": "Entry deleted. The schedule has been updated."
   },
   "invites": {
     "title": "Invites",
@@ -288,6 +298,7 @@
     "invitesUnavailable": "Invites are not available.",
     "inviteNotFound": "Invite not found",
     "demoCannotInvite": "The demo account cannot invite people.",
-    "inviteLimit": "{count, plural, one {You can have at most # open invite link.} other {You can have at most # open invite links.}}"
+    "inviteLimit": "{count, plural, one {You can have at most # open invite link.} other {You can have at most # open invite links.}}",
+    "replacementNotFound": "History entry not found"
   }
 }

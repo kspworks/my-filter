@@ -137,3 +137,17 @@ describe("deleting", () => {
     expect(await app.caller.systems.list()).toEqual([]);
   });
 });
+
+describe("when the data cannot be loaded", () => {
+  it("does not claim the system is gone", async () => {
+    const system = await aSystem();
+    app.failQueries();
+
+    app.render(<SystemDetailView systemId={system.id} />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Couldn’t load your data",
+    );
+    expect(screen.queryByText("System not found")).not.toBeInTheDocument();
+  });
+});

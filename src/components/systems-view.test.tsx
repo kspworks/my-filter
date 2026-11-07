@@ -59,3 +59,15 @@ describe("with systems", () => {
     expect(await screen.findByText("1 consumable")).toBeInTheDocument();
   });
 });
+
+describe("when the data cannot be loaded", () => {
+  it("reports the failure instead of a blank page", async () => {
+    app.failQueries();
+
+    app.render(<SystemsView />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Couldn’t load your data",
+    );
+  });
+});

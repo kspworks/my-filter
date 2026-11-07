@@ -105,4 +105,22 @@ test("every signed-in page fits a phone screen", async ({ page }, testInfo) => {
       await shoot(`uk${path.replaceAll("/", "-")}`);
     }
   });
+
+  // Ukrainian on purpose: the longest labels, so the tightest fit. Everything
+  // from `sm` up to the single-row layout at `lg` is where a name can get
+  // squeezed, and an ellipsis there hides the one thing that identifies a row.
+  await test.step("cartridge names stay readable up to the desktop row", async () => {
+    await page.goto("/consumables");
+    for (const width of [640, 700, 768, 820, 900, 1024]) {
+      await page.setViewportSize({ width, height: 900 });
+      const cut = await page
+        .locator("main span.truncate")
+        .evaluateAll(
+          (names) =>
+            names.filter((name) => name.scrollWidth > name.clientWidth).length,
+        );
+      expect(cut, `names cut off at ${width}px`).toBe(0);
+      await expectNoHorizontalScroll(page);
+    }
+  });
 });

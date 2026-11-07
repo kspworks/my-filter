@@ -11,6 +11,7 @@ import {
   ConsumableRow,
   type SystemOption,
 } from "~/components/consumable-row";
+import { LoadError } from "~/components/load-error";
 import { SystemFormDialog } from "~/components/system-form-dialog";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
@@ -130,6 +131,8 @@ export function DashboardView() {
 
   // Both queries feed the list now, so neither may render a half-built page.
   const isPending = consumablesQuery.isPending || systemsQuery.isPending;
+  const loadFailed =
+    consumablesQuery.isLoadingError || systemsQuery.isLoadingError;
 
   const counts = items.reduce<Record<DueStatus, number>>(
     (acc, item) => {
@@ -184,14 +187,21 @@ export function DashboardView() {
             </CardHeader>
             <CardContent>
               <span className="text-2xl font-semibold tabular-nums sm:text-3xl">
-                {isPending ? "—" : counts[tile.status]}
+                {isPending || loadFailed ? "—" : counts[tile.status]}
               </span>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {isPending ? (
+      {loadFailed ? (
+        <LoadError
+          onRetry={() => {
+            consumablesQuery.refetch();
+            systemsQuery.refetch();
+          }}
+        />
+      ) : isPending ? (
         <div className="grid gap-3">
           <Skeleton className="h-24" />
           <Skeleton className="h-24" />

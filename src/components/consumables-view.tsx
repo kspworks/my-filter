@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { ConsumableFormDialog } from "~/components/consumable-form-dialog";
 import { ConsumableRow } from "~/components/consumable-row";
+import { LoadError } from "~/components/load-error";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import { Skeleton } from "~/components/ui/skeleton";
@@ -44,7 +45,14 @@ export function ConsumablesView() {
         </Button>
       </div>
 
-      {consumablesQuery.isPending ? (
+      {consumablesQuery.isLoadingError || systemsQuery.isLoadingError ? (
+        <LoadError
+          onRetry={() => {
+            consumablesQuery.refetch();
+            systemsQuery.refetch();
+          }}
+        />
+      ) : consumablesQuery.isPending ? (
         <Skeleton className="h-40" />
       ) : (
         <>

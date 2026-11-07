@@ -2,7 +2,8 @@
 
 import { useMutation } from "@tanstack/react-query";
 import {
-  ChevronDown,
+  CalendarDays,
+  Ellipsis,
   History,
   Link2,
   Link2Off,
@@ -162,16 +163,24 @@ export function ConsumableRow({
   const lastChanged = formatDate(consumable.lastChangedOn);
 
   return (
-    // On a phone: name and the menu on top, then the due date, then a
-    // full-width replace button — a translated badge is too long to share a
-    // line with it. Grid placement does nothing once `sm:flex` takes over, so
-    // the DOM order, and what a screen reader hears, is the same at every width.
-    // Alignment is not placement, though: `self-start` on the menu needs its
-    // `sm:self-auto`, or it applies to the desktop row as well.
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 sm:flex sm:gap-4">
+    // Three layouts, so the name always has room: a translated badge and the
+    // Ukrainian button are too wide to share one line below `lg`, where a single
+    // row used to squeeze the name down to nothing.
+    // - Phone: name and the menu on top, then the due date, then a full-width
+    //   replace button.
+    // - `sm`: the due date and the replace button share the second line.
+    // - `lg`: everything on one row. The wrapper around the date and the button
+    //   turns into `contents`, and grid placement does nothing once `lg:flex`
+    //   takes over, so the DOM order, and what a screen reader hears, is the
+    //   same at every width. Alignment is not placement, though: `self-start`
+    //   on the menu needs its `lg:self-auto`, or it applies to that row as well.
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 lg:flex lg:gap-4">
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 sm:flex-nowrap">
-          <span className="min-w-0 truncate font-medium">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:flex-nowrap">
+          <span
+            className="min-w-0 truncate font-medium"
+            title={consumable.name}
+          >
             {consumable.name}
           </span>
           <Badge variant="secondary">
@@ -200,75 +209,78 @@ export function ConsumableRow({
         </p>
       </div>
 
-      <div className="col-span-2 row-start-2 flex flex-wrap items-center gap-x-2 gap-y-1 sm:block sm:w-40 sm:text-right">
-        <div className="text-sm font-medium">{formatDate(due.nextDueOn)}</div>
-        <DueBadge
-          status={due.status}
-          daysUntilDue={due.daysUntilDue}
-          className="sm:mt-1"
-        />
-      </div>
+      <div className="col-span-2 row-start-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:contents">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:block lg:w-40 lg:text-right">
+          <div className="text-sm font-medium">{formatDate(due.nextDueOn)}</div>
+          <DueBadge
+            status={due.status}
+            daysUntilDue={due.daysUntilDue}
+            className="lg:mt-1"
+          />
+        </div>
 
-      <div className="col-span-2 row-start-3 flex items-center">
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1 rounded-r-none sm:flex-none"
-          disabled={markReplacedMutation.isPending}
-          aria-busy={replacingToday}
-          onClick={() =>
-            markReplacedMutation.mutate({
-              id: consumable.id,
-              changedOn: today,
-            })
-          }
-        >
-          {replacingToday ? <Spinner /> : <RotateCcw aria-hidden />}
-          {t("markReplaced")}
-        </Button>
+        <div className="flex items-center">
+          <Button
+            size="sm"
+            variant="outline"
+            className="flex-1 rounded-r-none sm:flex-none"
+            disabled={markReplacedMutation.isPending}
+            aria-busy={replacingToday}
+            onClick={() =>
+              markReplacedMutation.mutate({
+                id: consumable.id,
+                changedOn: today,
+              })
+            }
+          >
+            {replacingToday ? <Spinner /> : <RotateCcw aria-hidden />}
+            {t("markReplaced")}
+          </Button>
 
-        <Popover open={backdateOpen} onOpenChange={setBackdateOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              aria-label={t("replaceOnAnotherDate")}
-              className="rounded-l-none border-l-0 px-2"
-            >
-              <ChevronDown aria-hidden />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-64">
-            <div className="grid gap-3">
-              <div className="grid gap-2">
-                <Label htmlFor={`backdate-${consumable.id}`}>
-                  {t("replacedOn")}
-                </Label>
-                <Input
-                  id={`backdate-${consumable.id}`}
-                  type="date"
-                  value={backdate}
-                  max={today}
-                  onChange={(event) => setBackdate(event.target.value)}
-                />
-              </div>
+          <Popover open={backdateOpen} onOpenChange={setBackdateOpen}>
+            <PopoverTrigger asChild>
               <Button
                 size="sm"
-                disabled={markReplacedMutation.isPending}
-                aria-busy={replacingBackdated}
-                onClick={() =>
-                  markReplacedMutation.mutate({
-                    id: consumable.id,
-                    changedOn: backdate,
-                  })
-                }
+                variant="outline"
+                aria-label={t("replaceOnAnotherDate")}
+                title={t("replaceOnAnotherDate")}
+                className="rounded-l-none border-l-0 px-2"
               >
-                {replacingBackdated && <Spinner />}
-                {tCommon("save")}
+                <CalendarDays aria-hidden />
               </Button>
-            </div>
-          </PopoverContent>
-        </Popover>
+            </PopoverTrigger>
+            <PopoverContent className="w-64">
+              <div className="grid gap-3">
+                <div className="grid gap-2">
+                  <Label htmlFor={`backdate-${consumable.id}`}>
+                    {t("replacedOn")}
+                  </Label>
+                  <Input
+                    id={`backdate-${consumable.id}`}
+                    type="date"
+                    value={backdate}
+                    max={today}
+                    onChange={(event) => setBackdate(event.target.value)}
+                  />
+                </div>
+                <Button
+                  size="sm"
+                  disabled={markReplacedMutation.isPending}
+                  aria-busy={replacingBackdated}
+                  onClick={() =>
+                    markReplacedMutation.mutate({
+                      id: consumable.id,
+                      changedOn: backdate,
+                    })
+                  }
+                >
+                  {replacingBackdated && <Spinner />}
+                  {tCommon("save")}
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       <DropdownMenu>
@@ -277,9 +289,10 @@ export function ConsumableRow({
             size="icon"
             variant="ghost"
             aria-label={t("moreActions")}
-            className="col-start-2 row-start-1 self-start justify-self-end sm:self-auto"
+            title={t("moreActions")}
+            className="col-start-2 row-start-1 self-start justify-self-end lg:self-auto"
           >
-            <ChevronDown aria-hidden />
+            <Ellipsis aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">

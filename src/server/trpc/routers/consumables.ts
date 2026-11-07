@@ -66,6 +66,38 @@ async function syncLastChanged(
 }
 
 /**
+ * The log newest first, the order `history` shows it. Its last row is the
+ * installation: that is defined by position, and nothing stores it.
+ */
+function replacementLog(tx: Transaction, consumableId: string, userId: string) {
+  return tx
+    .select({ id: consumableReplacements.id })
+    .from(consumableReplacements)
+    .where(
+      and(
+        eq(consumableReplacements.consumableId, consumableId),
+        eq(consumableReplacements.userId, userId),
+      ),
+    )
+    .orderBy(
+      desc(consumableReplacements.changedOn),
+      desc(consumableReplacements.createdAt),
+    );
+}
+
+async function selectConsumable(tx: Transaction, consumableId: string) {
+  const [consumable] = await tx
+    .select(consumableColumns)
+    .from(consumables)
+    .where(eq(consumables.id, consumableId));
+
+  if (!consumable) {
+    throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+  }
+  return consumable;
+}
+
+/**
  * Throws unless the system exists AND belongs to the caller.
  *
  * Takes the translator rather than reaching for a request-scoped one: the
@@ -311,15 +343,7 @@ export const consumablesRouter = router({
 
         await syncLastChanged(tx, input.id, ctx.user.id);
 
-        const [updated] = await tx
-          .select(consumableColumns)
-          .from(consumables)
-          .where(eq(consumables.id, input.id));
-
-        if (!updated) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-        }
-        return updated;
+        return selectConsumable(tx, input.id);
       });
     }),
 
@@ -328,19 +352,7 @@ export const consumablesRouter = router({
     .input(z.object({ id: zId }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.transaction(async (tx) => {
-        const entries = await tx
-          .select({ id: consumableReplacements.id })
-          .from(consumableReplacements)
-          .where(
-            and(
-              eq(consumableReplacements.consumableId, input.id),
-              eq(consumableReplacements.userId, ctx.user.id),
-            ),
-          )
-          .orderBy(
-            desc(consumableReplacements.changedOn),
-            desc(consumableReplacements.createdAt),
-          );
+        const entries = await replacementLog(tx, input.id, ctx.user.id);
 
         const [newest] = entries;
         if (!newest) {
@@ -362,15 +374,51 @@ export const consumablesRouter = router({
 
         await syncLastChanged(tx, input.id, ctx.user.id);
 
-        const [updated] = await tx
-          .select(consumableColumns)
-          .from(consumables)
-          .where(eq(consumables.id, input.id));
+        return selectConsumable(tx, input.id);
+      });
+    }),
 
-        if (!updated) {
-          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+  /**
+   * Corrects the log once the undo toast has gone: any entry but the
+   * installation, which is the one thing every due date is anchored to.
+   * `input.id` is the log entry, not the consumable.
+   */
+  deleteReplacement: protectedProcedure
+    .input(z.object({ id: zId }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.transaction(async (tx) => {
+        const [entry] = await tx
+          .select({ consumableId: consumableReplacements.consumableId })
+          .from(consumableReplacements)
+          .where(
+            and(
+              eq(consumableReplacements.id, input.id),
+              eq(consumableReplacements.userId, ctx.user.id),
+            ),
+          );
+
+        if (!entry) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: ctx.t("errors.replacementNotFound"),
+          });
         }
-        return updated;
+
+        const log = await replacementLog(tx, entry.consumableId, ctx.user.id);
+        if (log.at(-1)?.id === input.id) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: ctx.t("errors.installEntryProtected"),
+          });
+        }
+
+        await tx
+          .delete(consumableReplacements)
+          .where(eq(consumableReplacements.id, input.id));
+
+        await syncLastChanged(tx, entry.consumableId, ctx.user.id);
+
+        return selectConsumable(tx, entry.consumableId);
       });
     }),
 

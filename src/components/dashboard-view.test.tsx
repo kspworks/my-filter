@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardView } from "~/components/dashboard-view";
-import { screen, setupApp, type TestApp, waitFor } from "~/test-utils/render";
+import {
+  screen,
+  setupApp,
+  type TestApp,
+  userEvent,
+  waitFor,
+  within,
+} from "~/test-utils/render";
 
 /**
  * The broadest test in the suite: one render drives react-query, the tRPC
@@ -217,5 +224,33 @@ describe("grouping", () => {
     app.render(<DashboardView />);
 
     expect(await screen.findByText("1 item")).toBeInTheDocument();
+  });
+});
+
+describe("when the data cannot be loaded", () => {
+  it("reports the failure instead of an empty account", async () => {
+    const user = userEvent.setup();
+    await app.caller.consumables.create({
+      type: "sediment",
+      name: "Sediment PP",
+      intervalValue: 6,
+      intervalUnit: "months",
+      lastChangedOn: "2026-01-10",
+    });
+    const restore = app.failQueries();
+
+    app.render(<DashboardView />);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Couldn’t load your data");
+    expect(screen.queryByText("Nothing tracked yet")).not.toBeInTheDocument();
+    // "0 overdue" would be a claim the page cannot back up.
+    expect(screen.getAllByText("—")).toHaveLength(3);
+
+    restore();
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("Sediment PP")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

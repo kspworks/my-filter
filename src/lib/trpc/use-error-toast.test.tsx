@@ -91,3 +91,14 @@ describe("which message the user sees", () => {
     expect(await screen.findByText("System not found")).toBeInTheDocument();
   });
 });
+
+describe("when the request never got an answer", () => {
+  it("does not show the browser's own message", async () => {
+    await toastFor({ message: "Failed to fetch" });
+
+    expect(
+      await screen.findByText("Something went wrong. Please try again."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Failed to fetch")).not.toBeInTheDocument();
+  });
+});

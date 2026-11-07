@@ -31,7 +31,9 @@ export function useErrorToast(): (error: AppError) => void {
         toast.error(t("unauthorized"));
         return;
       }
-      if (code === "INTERNAL_SERVER_ERROR" || !error.message) {
+      // No `code` means the request never got an answer, and what is left is the
+      // browser's own "Failed to fetch": English, and no use to anyone.
+      if (!code || code === "INTERNAL_SERVER_ERROR" || !error.message) {
         toast.error(t("generic"));
         return;
       }

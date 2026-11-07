@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
+import { LoadError } from "~/components/load-error";
 import { SystemFormDialog } from "~/components/system-form-dialog";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -35,7 +36,9 @@ export function SystemsView() {
         </Button>
       </div>
 
-      {systemsQuery.isPending ? (
+      {systemsQuery.isLoadingError ? (
+        <LoadError onRetry={() => systemsQuery.refetch()} />
+      ) : systemsQuery.isPending ? (
         <div className="grid gap-3">
           <Skeleton className="h-20" />
           <Skeleton className="h-20" />

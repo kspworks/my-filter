@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 import { ConsumableFormDialog } from "~/components/consumable-form-dialog";
 import { ConsumableRow } from "~/components/consumable-row";
+import { LoadError } from "~/components/load-error";
 import { PresetPicker } from "~/components/preset-picker";
 import { SystemFormDialog } from "~/components/system-form-dialog";
 import { Button } from "~/components/ui/button";
@@ -61,7 +62,10 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
     return <Skeleton className="h-64" />;
   }
 
-  if (systemQuery.isError || !systemQuery.data) {
+  // Only the server's own answer means it is gone. `BAD_REQUEST` is an id that
+  // could never have existed; anything else is a failure to find out.
+  const errorCode = systemQuery.error?.data?.code;
+  if (errorCode === "NOT_FOUND" || errorCode === "BAD_REQUEST") {
     return (
       <Card>
         <CardContent className="py-12 text-center">
@@ -71,6 +75,20 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
           </Button>
         </CardContent>
       </Card>
+    );
+  }
+
+  // Deliberately the whole page rather than the list: with no cartridges loaded,
+  // the heading would say "(0)" and the delete dialog would promise nothing is
+  // attached.
+  if (!systemQuery.data || consumablesQuery.isLoadingError) {
+    return (
+      <LoadError
+        onRetry={() => {
+          systemQuery.refetch();
+          consumablesQuery.refetch();
+        }}
+      />
     );
   }
 

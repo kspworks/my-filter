@@ -79,3 +79,18 @@ describe("split by attachment", () => {
     expect(text.indexOf("Sooner")).toBeLessThan(text.indexOf("Later"));
   });
 });
+
+describe("when the data cannot be loaded", () => {
+  it("reports the failure instead of two empty sections", async () => {
+    app.failQueries();
+
+    app.render(<ConsumablesView />);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Couldn’t load your data",
+    );
+    expect(
+      screen.queryByText("Nothing attached to a system yet."),
+    ).not.toBeInTheDocument();
+  });
+});

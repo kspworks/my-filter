@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { type RenderResult, render } from "@testing-library/react";
 import {
   createTRPCClient,
+  TRPCClientError,
   type TRPCLink,
   unstable_localLink,
 } from "@trpc/client";
@@ -49,6 +50,13 @@ export type TestApp = {
    * The request itself still goes through the real router once released.
    */
   holdMutations: () => () => void;
+  /**
+   * Fails every query sent after this call, the way a dropped connection does:
+   * no tRPC `data`, just the browser's own message. The router has no way to
+   * fail like that, and "the request never came back" is the case that matters.
+   * Call the returned `restore` to let them through again.
+   */
+  failQueries: () => () => void;
   close: () => void;
 };
 
@@ -63,10 +71,17 @@ export async function setupApp({
   // The local link resolves on a microtask, so without a gate no render ever
   // happens while a mutation is pending.
   let gate: Promise<void> | undefined;
+  let queriesFail = false;
   const holdLink: TRPCLink<AppRouter> =
     () =>
     ({ op, next }) =>
       observable((observer) => {
+        if (queriesFail && op.type === "query") {
+          observer.error(
+            TRPCClientError.from(new TypeError("Failed to fetch")),
+          );
+          return;
+        }
         let unsubscribe: (() => void) | undefined;
         let cancelled = false;
         const held = op.type === "mutation" ? gate : undefined;
@@ -114,6 +129,12 @@ export async function setupApp({
       return () => {
         gate = undefined;
         release();
+      };
+    },
+    failQueries: () => {
+      queriesFail = true;
+      return () => {
+        queriesFail = false;
       };
     },
     render: (ui: ReactNode) =>

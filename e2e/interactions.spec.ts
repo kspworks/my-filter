@@ -103,6 +103,53 @@ test("opens the service history from the row menu", async ({ page }) => {
   await expect(dialog.getByText("Installed")).toBeVisible();
 });
 
+test("corrects the log by deleting an entry from the history", async ({
+  page,
+}) => {
+  await page.goto("/consumables");
+  await page.getByRole("button", { name: "Mark replaced" }).first().click();
+  await expect(page.getByText(/replaced on/)).toBeVisible();
+
+  await page.getByRole("button", { name: "More actions" }).first().click();
+  await page.getByRole("menuitem", { name: "History" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByRole("listitem")).toHaveCount(3);
+
+  // The newest entry, which is what a mis-tap leaves behind. The confirmation
+  // opens on top of the history dialog, a stack jsdom cannot judge.
+  await dialog
+    .getByRole("button", { name: /^Delete the entry from/ })
+    .first()
+    .click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Delete" })
+    .click();
+
+  await expect(
+    page.getByText("Entry deleted.", { exact: false }),
+  ).toBeVisible();
+  await expect(dialog.getByRole("listitem")).toHaveCount(2);
+  await expect(dialog.getByText("Installed")).toBeVisible();
+});
+
+test("reports a failed load, then recovers on retry", async ({ page }) => {
+  await page.route("**/api/trpc/**", (route) => route.abort());
+  await page.goto("/");
+
+  // Once the client's own retry has run out, not before. Scoped to `main`
+  // because Next's route announcer is an `alert` too.
+  const alert = page.getByRole("main").getByRole("alert");
+  await expect(alert).toContainText("Couldn’t load your data");
+  await expect(page.getByText("Nothing tracked yet")).toHaveCount(0);
+
+  await page.unroute("**/api/trpc/**");
+  await alert.getByRole("button", { name: "Try again" }).click();
+
+  await expect(page.getByText("Interaction membrane")).toBeVisible();
+  await expect(alert).toHaveCount(0);
+});
+
 test("offers the order link in the row menu once there is one", async ({
   page,
 }) => {
