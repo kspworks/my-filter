@@ -314,6 +314,11 @@ Rules worth knowing before writing one:
   import the real `~/server/db` singleton.** They rely on Vitest's per-file isolation; do not
   set `isolate: false`.
 
+`pnpm screenshots` regenerates the README images: `playwright.screenshots.config.ts` builds the
+app like the suite does, over a throwaway database with the demo seed. Run it after changing what
+those pages look like. `e2e/screenshots.spec.ts` and `e2e/demo.setup.ts` are its only specs, and
+the regular projects skip them.
+
 E2E (`pnpm test:e2e`) runs against `pnpm build && pnpm start`, not `next dev`, because that
 is where the React Compiler runs and where async Server Components, the two layout
 redirects and the locale Server Action actually exist. `pnpm test` stays Vitest-only so the

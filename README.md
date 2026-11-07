@@ -14,7 +14,7 @@ click**.
 
 The dashboard, most urgent first:
 
-![Dashboard with overdue, due-soon and on-schedule cartridges grouped by system](docs/screenshots/dashboard.en.png)
+![Dashboard listing the cartridges that need attention, then the rest grouped by system](docs/screenshots/dashboard.en.png)
 
 A system and its cartridges, and one cartridge's service history:
 
@@ -22,7 +22,13 @@ A system and its cartridges, and one cartridge's service history:
 
 ![Service history dialog for a sediment cartridge](docs/screenshots/history.en.png)
 
-Taken from the demo account `pnpm db:seed` creates.
+On a phone:
+
+<img src="docs/screenshots/mobile-dashboard.en.png" alt="Dashboard on a phone" width="270">
+
+Taken from the demo account `pnpm db:seed` creates. `pnpm screenshots` regenerates all of them:
+it builds the app like `pnpm test:e2e` does, seeds a throwaway database and saves the images to
+`docs/screenshots/`.
 
 ## Stack
 
@@ -62,6 +68,7 @@ never emails this account, so it is safe to seed in production for demonstration
 | `pnpm test:e2e` / `pnpm test:e2e:ui` | Playwright against a production build (headless / UI mode)                    |
 | `pnpm test:e2e:db`                   | Rebuild the throwaway e2e database in `./.e2e/` (Playwright does this itself) |
 | `pnpm test:all`                      | Both suites                                                                   |
+| `pnpm screenshots`                   | Regenerate the README images in `docs/screenshots/`                           |
 | `pnpm db:generate`                   | Create a migration from schema changes                                        |
 | `pnpm db:migrate`                    | Apply migrations                                                              |
 | `pnpm db:studio`                     | Drizzle Studio                                                                |
