@@ -104,6 +104,8 @@ export function renderDigest(
   const intro = t("email.digest.intro");
   const openApp = t("email.digest.openApp");
   const footer = t("email.digest.footer");
+  const manage = t("email.digest.manage");
+  const settingsUrl = `${appUrl.replace(/\/$/, "")}/settings`;
 
   const text = [
     intro,
@@ -116,6 +118,7 @@ export function renderDigest(
     `${openApp}: ${appUrl}`,
     "",
     footer,
+    `${manage}: ${settingsUrl}`,
   ].join("\n");
 
   // Inline styles only, no <style> block and no images: every mail client
@@ -131,7 +134,7 @@ export function renderDigest(
           .join("")}</ul>`,
     ),
     `<p style="margin-top:24px"><a href="${escapeHtml(appUrl)}" style="color:#2563eb">${escapeHtml(openApp)}</a></p>`,
-    `<p style="margin-top:24px;font-size:13px;color:#71717a">${escapeHtml(footer)}</p>`,
+    `<p style="margin-top:24px;font-size:13px;color:#71717a">${escapeHtml(footer)} <a href="${escapeHtml(settingsUrl)}" style="color:#71717a">${escapeHtml(manage)}</a></p>`,
     "</div>",
   ].join("");
 

@@ -99,8 +99,8 @@ export function SystemFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form onSubmit={handleSubmit}>
+      <DialogContent sheet>
+        <form className="flex min-h-full flex-col" onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
               {isEdit ? t("form.editTitle") : t("form.addTitle")}
@@ -108,7 +108,7 @@ export function SystemFormDialog({
             <DialogDescription>{t("form.description")}</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid flex-1 content-start gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="manufacturer">{t("form.manufacturer")}</Label>
               <Input
@@ -137,6 +137,7 @@ export function SystemFormDialog({
                 id="installedOn"
                 type="date"
                 required
+                max={today}
                 value={installedOn}
                 onChange={(event) => setInstalledOn(event.target.value)}
               />

@@ -91,7 +91,7 @@ export function RegisterForm({
             <Label htmlFor="name">{t("username")}</Label>
             <Input
               id="name"
-              autoComplete="username"
+              autoComplete="name"
               required
               maxLength={60}
               value={name}

@@ -44,3 +44,31 @@ test("links the app icons", async ({ page }) => {
   );
   await expect(page.locator('link[rel="apple-touch-icon"]')).toHaveCount(1);
 });
+
+test("offers a way back in to someone who forgot their password", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  await page.getByRole("link", { name: "Forgot password?" }).click();
+  // The login page has an "Email" field too, so filling before this lands would
+  // type into the page that is about to go away.
+  await expect(page).toHaveURL("/forgot-password");
+
+  await page.getByLabel("Email").fill("nobody@example.com");
+  await page.getByRole("button", { name: "Send reset link" }).click();
+
+  // The same answer as for a real address.
+  await expect(page.getByRole("status")).toContainText(
+    "If «nobody@example.com» has an account",
+  );
+});
+
+test("turns a stale reset link into a way to get a new one", async ({
+  page,
+}) => {
+  await page.goto("/reset-password?error=INVALID_TOKEN");
+
+  await expect(
+    page.getByRole("link", { name: "Request a new link" }),
+  ).toBeVisible();
+});

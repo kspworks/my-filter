@@ -28,6 +28,9 @@ async function flatMessages(locale: Locale) {
 
 /** Every placeholder used anywhere in the catalogue, so any message can render. */
 const EVERY_ARGUMENT = {
+  item: "item",
+  skipped: 2,
+  email: "a@example.com",
   count: 5,
   name: "Sediment PP",
   date: "1 Jan 2026",
@@ -250,6 +253,6 @@ describe("English plurals", () => {
     expect(t("duePhrase.overdue", { count: 1 })).toBe("1 day overdue");
     expect(t("duePhrase.upcoming", { count: 5 })).toBe("in 5 days");
     expect(t("duePhrase.upcoming", { count: 1 })).toBe("tomorrow");
-    expect(t("common.itemCount", { count: 1 })).toBe("1 item");
+    expect(t("common.itemCount", { count: 1 })).toBe("1 cartridge");
   });
 });

@@ -189,7 +189,7 @@ export function SystemDetailView({ systemId }: { systemId: string }) {
           open
           onOpenChange={setChoosingPreset}
           systemId={systemId}
-          installedOn={system.installedOn}
+          trackedTypes={items.map((item) => item.type)}
         />
       ) : null}
 

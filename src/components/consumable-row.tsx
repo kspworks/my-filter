@@ -15,6 +15,7 @@ import {
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import { toast } from "sonner";
+import { AttachDialog } from "~/components/attach-dialog";
 import { ConfirmDialog } from "~/components/confirm-dialog";
 import {
   type ConsumableDraft,
@@ -46,6 +47,7 @@ import { useTRPC } from "~/lib/trpc/client";
 import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
 import { useFormatDate } from "~/lib/use-format-date";
+import { cn } from "~/lib/utils";
 
 export type ConsumableListItem = ConsumableDraft & {
   systemManufacturer: string | null;
@@ -57,6 +59,21 @@ export type SystemOption = {
   manufacturer: string;
   model: string;
 };
+
+/**
+ * "Sediment (PP)" beside "Sediment PP 5 micron" tells a phone reader nothing and
+ * can cost a line. The parenthetical is dropped first, because it is often an
+ * abbreviation a person's own name for the cartridge will not contain.
+ */
+function labelRepeatsName(label: string, name: string): boolean {
+  const words = name.toLowerCase().split(/[\s()]+/);
+  return label
+    .replace(/\(.*?\)/g, "")
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .every((word) => words.includes(word));
+}
 
 export function ConsumableRow({
   consumable,
@@ -80,10 +97,15 @@ export function ConsumableRow({
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [showingHistory, setShowingHistory] = useState(false);
+  const [attaching, setAttaching] = useState(false);
   const [backdateOpen, setBackdateOpen] = useState(false);
   const [backdate, setBackdate] = useState(today);
 
   const due = dueInfo(consumable, today);
+  // A spare is in its box: no schedule is running, so nothing about it is due.
+  const spare = consumable.systemId === null;
+  const needsAttention = !spare && due.status !== "ok";
+  const typeLabel = labels.consumableType(consumable.type);
 
   const undoMutation = useMutation(
     trpc.consumables.undoLastReplacement.mutationOptions({
@@ -125,16 +147,6 @@ export function ConsumableRow({
   const replacingBackdated = markReplacedMutation.isPending && backdateOpen;
   const replacingToday = markReplacedMutation.isPending && !backdateOpen;
 
-  const attachMutation = useMutation(
-    trpc.consumables.attach.mutationOptions({
-      onSuccess: async () => {
-        await refresh();
-        toast.success(t("toast.attached"));
-      },
-      onError,
-    }),
-  );
-
   const detachMutation = useMutation(
     trpc.consumables.detach.mutationOptions({
       onSuccess: async () => {
@@ -167,14 +179,14 @@ export function ConsumableRow({
     // Ukrainian button are too wide to share one line below `lg`, where a single
     // row used to squeeze the name down to nothing.
     // - Phone: name and the menu on top, then the due date, then a full-width
-    //   replace button.
+    //   replace button, or an icon beside the date when nothing is due yet.
     // - `sm`: the due date and the replace button share the second line.
     // - `lg`: everything on one row. The wrapper around the date and the button
     //   turns into `contents`, and grid placement does nothing once `lg:flex`
     //   takes over, so the DOM order, and what a screen reader hears, is the
     //   same at every width. Alignment is not placement, though: `self-start`
     //   on the menu needs its `lg:self-auto`, or it applies to that row as well.
-    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 px-4 py-3 lg:flex lg:gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1.5 px-4 py-3 lg:flex lg:gap-4">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:flex-nowrap">
           <span
@@ -183,8 +195,13 @@ export function ConsumableRow({
           >
             {consumable.name}
           </span>
-          <Badge variant="secondary">
-            {labels.consumableType(consumable.type)}
+          <Badge
+            variant="secondary"
+            className={cn(
+              labelRepeatsName(typeLabel, consumable.name) && "max-sm:hidden",
+            )}
+          >
+            {typeLabel}
           </Badge>
         </div>
         {/*
@@ -194,93 +211,132 @@ export function ConsumableRow({
           number in Ukrainian.
         */}
         <p className="mt-0.5 text-sm text-muted-foreground">
-          {showSystem && consumable.systemManufacturer
-            ? t("summaryWithSystem", {
-                count: consumable.intervalValue,
-                interval,
-                date: lastChanged,
-                system: `${consumable.systemManufacturer} ${consumable.systemModel}`,
-              })
-            : t("summary", {
-                count: consumable.intervalValue,
-                interval,
-                date: lastChanged,
-              })}
+          {spare
+            ? t("summarySpare", { count: consumable.intervalValue, interval })
+            : showSystem && consumable.systemManufacturer
+              ? t("summaryWithSystem", {
+                  count: consumable.intervalValue,
+                  interval,
+                  date: lastChanged,
+                  system: `${consumable.systemManufacturer} ${consumable.systemModel}`,
+                })
+              : t("summary", {
+                  count: consumable.intervalValue,
+                  interval,
+                  date: lastChanged,
+                })}
         </p>
       </div>
 
-      <div className="col-span-2 row-start-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between lg:contents">
+      <div
+        className={cn(
+          "col-span-2 row-start-2 flex gap-2 lg:contents",
+          needsAttention
+            ? "flex-col sm:flex-row sm:items-center sm:justify-between"
+            : "flex-wrap items-center justify-between",
+        )}
+      >
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 lg:block lg:w-40 lg:text-right">
-          <div className="text-sm font-medium">{formatDate(due.nextDueOn)}</div>
-          <DueBadge
-            status={due.status}
-            daysUntilDue={due.daysUntilDue}
-            className="lg:mt-1"
-          />
+          {spare ? (
+            <Badge variant="outline">{t("spare")}</Badge>
+          ) : (
+            <>
+              <div className="text-sm font-medium">
+                {formatDate(due.nextDueOn)}
+              </div>
+              <DueBadge
+                status={due.status}
+                daysUntilDue={due.daysUntilDue}
+                className="lg:mt-1"
+              />
+            </>
+          )}
         </div>
 
-        <div className="flex items-center">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 rounded-r-none sm:flex-none"
-            disabled={markReplacedMutation.isPending}
-            aria-busy={replacingToday}
-            onClick={() =>
-              markReplacedMutation.mutate({
-                id: consumable.id,
-                changedOn: today,
-              })
-            }
-          >
-            {replacingToday ? <Spinner /> : <RotateCcw aria-hidden />}
-            {t("markReplaced")}
-          </Button>
+        {spare ? (
+          systems.length > 0 ? (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setAttaching(true)}
+            >
+              <Link2 aria-hidden />
+              {t("install")}
+            </Button>
+          ) : null
+        ) : (
+          <div className="flex items-center">
+            <Button
+              size="sm"
+              variant={needsAttention ? "default" : "outline"}
+              className={cn(
+                "rounded-r-none",
+                needsAttention
+                  ? "flex-1 sm:flex-none"
+                  : "max-sm:w-11 max-sm:px-0",
+              )}
+              disabled={markReplacedMutation.isPending}
+              aria-busy={replacingToday}
+              onClick={() =>
+                markReplacedMutation.mutate({
+                  id: consumable.id,
+                  changedOn: today,
+                })
+              }
+            >
+              {replacingToday ? <Spinner /> : <RotateCcw aria-hidden />}
+              {/* Nothing is due, so on a phone the row spends no line on it.
+                  Still the button's accessible name when only the icon shows. */}
+              <span className={needsAttention ? undefined : "max-sm:sr-only"}>
+                {t("markReplaced")}
+              </span>
+            </Button>
 
-          <Popover open={backdateOpen} onOpenChange={setBackdateOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                aria-label={t("replaceOnAnotherDate")}
-                title={t("replaceOnAnotherDate")}
-                className="rounded-l-none border-l-0 px-2"
-              >
-                <CalendarDays aria-hidden />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64">
-              <div className="grid gap-3">
-                <div className="grid gap-2">
-                  <Label htmlFor={`backdate-${consumable.id}`}>
-                    {t("replacedOn")}
-                  </Label>
-                  <Input
-                    id={`backdate-${consumable.id}`}
-                    type="date"
-                    value={backdate}
-                    max={today}
-                    onChange={(event) => setBackdate(event.target.value)}
-                  />
-                </div>
+            <Popover open={backdateOpen} onOpenChange={setBackdateOpen}>
+              <PopoverTrigger asChild>
                 <Button
                   size="sm"
-                  disabled={markReplacedMutation.isPending}
-                  aria-busy={replacingBackdated}
-                  onClick={() =>
-                    markReplacedMutation.mutate({
-                      id: consumable.id,
-                      changedOn: backdate,
-                    })
-                  }
+                  variant="outline"
+                  aria-label={t("replaceOnAnotherDate")}
+                  title={t("replaceOnAnotherDate")}
+                  className="rounded-l-none border-l-0 px-2 max-sm:w-11"
                 >
-                  {replacingBackdated && <Spinner />}
-                  {tCommon("save")}
+                  <CalendarDays aria-hidden />
                 </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-64">
+                <div className="grid gap-3">
+                  <div className="grid gap-2">
+                    <Label htmlFor={`backdate-${consumable.id}`}>
+                      {t("replacedOn")}
+                    </Label>
+                    <Input
+                      id={`backdate-${consumable.id}`}
+                      type="date"
+                      value={backdate}
+                      max={today}
+                      onChange={(event) => setBackdate(event.target.value)}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={markReplacedMutation.isPending}
+                    aria-busy={replacingBackdated}
+                    onClick={() =>
+                      markReplacedMutation.mutate({
+                        id: consumable.id,
+                        changedOn: backdate,
+                      })
+                    }
+                  >
+                    {replacingBackdated && <Spinner />}
+                    {tCommon("save")}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        )}
       </div>
 
       <DropdownMenu>
@@ -343,21 +399,10 @@ export function ConsumableRow({
           ) : systems.length > 0 ? (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel>{t("attachment")}</DropdownMenuLabel>
-              {systems.map((system) => (
-                <DropdownMenuItem
-                  key={system.id}
-                  onSelect={() =>
-                    attachMutation.mutate({
-                      id: consumable.id,
-                      systemId: system.id,
-                    })
-                  }
-                >
-                  <Link2 aria-hidden />
-                  {system.manufacturer} {system.model}
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuItem onSelect={() => setAttaching(true)}>
+                <Link2 aria-hidden />
+                {t("install")}
+              </DropdownMenuItem>
             </>
           ) : null}
 
@@ -377,6 +422,17 @@ export function ConsumableRow({
           open={editing}
           onOpenChange={setEditing}
           consumable={consumable}
+        />
+      ) : null}
+
+      {attaching ? (
+        <AttachDialog
+          open
+          onOpenChange={setAttaching}
+          consumableId={consumable.id}
+          consumableName={consumable.name}
+          systems={systems}
+          today={today}
         />
       ) : null}
 

@@ -210,6 +210,46 @@ describe("presets", () => {
     );
   });
 
+  it("adds nothing the second time", async () => {
+    const system = await caller.systems.create(SYSTEM);
+    const input = { systemId: system.id, presetId: "prefilter_3_stage" };
+
+    await caller.systems.applyPreset(input);
+    const second = await caller.systems.applyPreset(input);
+
+    expect(second).toEqual({ created: 0, skipped: 3 });
+    expect(await caller.consumables.list({ systemId: system.id })).toHaveLength(
+      3,
+    );
+  });
+
+  it("fills in only what a bigger set adds", async () => {
+    const system = await caller.systems.create(SYSTEM);
+    await caller.systems.applyPreset({
+      systemId: system.id,
+      presetId: "prefilter_3_stage",
+    });
+
+    const result = await caller.systems.applyPreset({
+      systemId: system.id,
+      presetId: "ro_5_stage",
+    });
+
+    expect(result).toEqual({ created: 2, skipped: 3 });
+  });
+
+  it("refuses a date that has not happened", async () => {
+    const system = await caller.systems.create(SYSTEM);
+
+    await expect(
+      caller.systems.applyPreset({
+        systemId: system.id,
+        presetId: "prefilter_3_stage",
+        lastChangedOn: "2999-01-01",
+      }),
+    ).rejects.toThrow(/future/);
+  });
+
   it("accepts an explicit date instead", async () => {
     const system = await caller.systems.create(SYSTEM);
 

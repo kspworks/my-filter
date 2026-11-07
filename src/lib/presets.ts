@@ -109,3 +109,17 @@ export const PRESETS: readonly Preset[] = [
 export function findPreset(id: string): Preset | undefined {
   return PRESETS.find((preset) => preset.id === id);
 }
+
+/**
+ * What the presets recommend for a type, so the add form can start from a
+ * sensible interval. `null` for a type no preset covers.
+ */
+export function defaultInterval(
+  type: ConsumableType,
+): Pick<PresetItem, "intervalValue" | "intervalUnit"> | null {
+  for (const preset of PRESETS) {
+    const item = preset.items.find((candidate) => candidate.type === type);
+    if (item) return item;
+  }
+  return null;
+}

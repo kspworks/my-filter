@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { CircleAlert, CircleCheck, Clock, Plus } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ConsumableFormDialog } from "~/components/consumable-form-dialog";
 import {
   type ConsumableListItem,
@@ -20,6 +20,7 @@ import { compareByUrgency, type DueStatus, dueInfo } from "~/lib/due-date";
 import { useLabels } from "~/lib/labels";
 import { useTRPC } from "~/lib/trpc/client";
 import { useToday } from "~/lib/use-today";
+import { cn } from "~/lib/utils";
 
 const UNASSIGNED_KEY = "__unassigned__";
 
@@ -122,6 +123,7 @@ export function DashboardView() {
   const today = useToday();
   const [addingSystem, setAddingSystem] = useState(false);
   const [addingConsumable, setAddingConsumable] = useState(false);
+  const [filter, setFilter] = useState<DueStatus | null>(null);
 
   const consumablesQuery = useQuery(trpc.consumables.list.queryOptions({}));
   const systemsQuery = useQuery(trpc.systems.list.queryOptions());
@@ -134,15 +136,64 @@ export function DashboardView() {
   const loadFailed =
     consumablesQuery.isLoadingError || systemsQuery.isLoadingError;
 
-  const counts = items.reduce<Record<DueStatus, number>>(
+  // A spare has no schedule running, so it is in none of these counts.
+  const installed = items
+    .filter((item) => item.systemId !== null)
+    .sort((a, b) => compareByUrgency(dueInfo(a, today), dueInfo(b, today)));
+  const statusOf = (item: ConsumableListItem) => dueInfo(item, today).status;
+
+  const counts = installed.reduce<Record<DueStatus, number>>(
     (acc, item) => {
-      acc[dueInfo(item, today).status] += 1;
+      acc[statusOf(item)] += 1;
       return acc;
     },
     { overdue: 0, due_soon: 0, ok: 0 },
   );
 
-  const groups = groupBySystem(items, systems, today);
+  // Replacing the last overdue cartridge empties the filter it was found under.
+  const activeFilter = filter && counts[filter] > 0 ? filter : null;
+  const attention = installed.filter((item) => statusOf(item) !== "ok");
+  const attentionSystems = new Set(attention.map((item) => item.systemId));
+
+  // Whatever needs attention is listed once, at the top, across every system,
+  // which is the only way "most urgent first" can hold for the whole page. A
+  // system whose cartridges all moved up there has nothing left to show, while
+  // one with no cartridges at all keeps its card and its way forward.
+  const groups = groupBySystem(
+    items.filter((item) => item.systemId === null || statusOf(item) === "ok"),
+    systems,
+    today,
+  ).filter(
+    (group) => group.items.length > 0 || !attentionSystems.has(group.key),
+  );
+
+  const flatList = (
+    title: string,
+    list: ConsumableListItem[],
+    action?: ReactNode,
+  ) => (
+    <Card className="overflow-hidden py-0 gap-0">
+      <CardHeader className="grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-muted/40 py-3">
+        <CardTitle className="text-base">{title}</CardTitle>
+        {action ?? (
+          <span className="text-sm text-muted-foreground">
+            {tCommon("itemCount", { count: list.length })}
+          </span>
+        )}
+      </CardHeader>
+      <CardContent className="divide-y divide-border p-0">
+        {list.map((item) => (
+          <ConsumableRow
+            key={item.id}
+            consumable={item}
+            today={today}
+            systems={systems}
+            showSystem
+          />
+        ))}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="grid gap-6">
@@ -169,29 +220,46 @@ export function DashboardView() {
       </div>
 
       <div className="grid grid-cols-3 gap-2 sm:gap-4">
-        {TILES.map((tile) => (
-          <Card
-            key={tile.status}
-            className="max-sm:[--card-spacing:--spacing(3)]"
-          >
-            <CardHeader className="pb-2">
-              {/* Icon above the label on a phone: a third of the screen is too narrow
-                  for both side by side, especially in Ukrainian. */}
-              <CardTitle className="flex flex-col items-start gap-1 text-xs font-medium text-muted-foreground sm:flex-row sm:items-center sm:gap-2 sm:text-sm">
-                <tile.icon
-                  className={`size-4 shrink-0 ${tile.className}`}
-                  aria-hidden
-                />
-                {labels.dueStatus(tile.status)}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <span className="text-2xl font-semibold tabular-nums sm:text-3xl">
-                {isPending || loadFailed ? "—" : counts[tile.status]}
-              </span>
-            </CardContent>
-          </Card>
-        ))}
+        {TILES.map((tile) => {
+          const count = counts[tile.status];
+          const selected = activeFilter === tile.status;
+          return (
+            <button
+              key={tile.status}
+              type="button"
+              aria-pressed={selected}
+              disabled={isPending || loadFailed || count === 0}
+              onClick={() => setFilter(selected ? null : tile.status)}
+              className="rounded-xl text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 enabled:cursor-pointer"
+            >
+              <Card
+                className={cn(
+                  "h-full transition-colors max-sm:[--card-spacing:--spacing(3)]",
+                  selected
+                    ? "ring-2 ring-foreground/60"
+                    : count > 0 && "hover:ring-foreground/30",
+                )}
+              >
+                <CardHeader className="pb-2">
+                  {/* Icon above the label on a phone: a third of the screen is too narrow
+                      for both side by side, especially in Ukrainian. */}
+                  <CardTitle className="flex flex-col items-start gap-1 text-xs font-medium text-muted-foreground sm:flex-row sm:items-center sm:gap-2 sm:text-sm">
+                    <tile.icon
+                      className={`size-4 shrink-0 ${tile.className}`}
+                      aria-hidden
+                    />
+                    {labels.dueStatus(tile.status)}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <span className="text-2xl font-semibold tabular-nums sm:text-3xl">
+                    {isPending || loadFailed ? "—" : count}
+                  </span>
+                </CardContent>
+              </Card>
+            </button>
+          );
+        })}
       </div>
 
       {loadFailed ? (
@@ -219,48 +287,70 @@ export function DashboardView() {
             </Button>
           </CardContent>
         </Card>
+      ) : activeFilter ? (
+        flatList(
+          labels.dueStatus(activeFilter),
+          installed.filter((item) => statusOf(item) === activeFilter),
+          <Button variant="ghost" size="sm" onClick={() => setFilter(null)}>
+            {t("showAll")}
+          </Button>,
+        )
       ) : (
-        groups.map((group) => (
-          <Card key={group.key} className="overflow-hidden py-0 gap-0">
-            <CardHeader className="flex-row items-center justify-between border-b border-border bg-muted/40 py-3">
-              <CardTitle className="min-w-0 break-words text-base">
-                {group.href ? (
-                  <Link href={group.href} className="hover:underline">
-                    {group.title ?? t("unassigned")}
-                  </Link>
+        <>
+          {attention.length > 0
+            ? flatList(t("needsAttention"), attention)
+            : null}
+          {groups.map((group) => (
+            <Card key={group.key} className="overflow-hidden py-0 gap-0">
+              <CardHeader className="grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-border bg-muted/40 py-3">
+                <CardTitle className="min-w-0 break-words text-base">
+                  {group.href ? (
+                    <Link
+                      href={group.href}
+                      className="hover:underline max-sm:inline-block max-sm:py-3"
+                    >
+                      {group.title ?? t("unassigned")}
+                    </Link>
+                  ) : (
+                    (group.title ?? t("unassigned"))
+                  )}
+                </CardTitle>
+                <span className="text-sm text-muted-foreground">
+                  {tCommon("itemCount", { count: group.items.length })}
+                </span>
+              </CardHeader>
+              <CardContent className="divide-y divide-border p-0">
+                {group.items.length === 0 ? (
+                  <p className="p-8 text-center text-sm text-muted-foreground">
+                    {t("groupEmpty")}
+                  </p>
                 ) : (
-                  (group.title ?? t("unassigned"))
+                  group.items.map((item) => (
+                    <ConsumableRow
+                      key={item.id}
+                      consumable={item}
+                      today={today}
+                      systems={systems}
+                    />
+                  ))
                 )}
-              </CardTitle>
-              <span className="text-sm text-muted-foreground">
-                {tCommon("itemCount", { count: group.items.length })}
-              </span>
-            </CardHeader>
-            <CardContent className="divide-y divide-border p-0">
-              {group.items.length === 0 ? (
-                <p className="p-8 text-center text-sm text-muted-foreground">
-                  {t("groupEmpty")}
-                </p>
-              ) : (
-                group.items.map((item) => (
-                  <ConsumableRow
-                    key={item.id}
-                    consumable={item}
-                    today={today}
-                    systems={systems}
-                  />
-                ))
-              )}
-            </CardContent>
-          </Card>
-        ))
+              </CardContent>
+            </Card>
+          ))}
+        </>
       )}
 
       {addingSystem ? (
         <SystemFormDialog open onOpenChange={setAddingSystem} />
       ) : null}
       {addingConsumable ? (
-        <ConsumableFormDialog open onOpenChange={setAddingConsumable} />
+        <ConsumableFormDialog
+          open
+          onOpenChange={setAddingConsumable}
+          // With one system there is no question where it goes. With several,
+          // staying on "spare" is safer than guessing the wrong one.
+          defaultSystemId={systems.length === 1 ? systems[0]?.id : undefined}
+        />
       ) : null}
     </div>
   );

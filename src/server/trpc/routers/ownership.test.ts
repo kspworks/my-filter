@@ -104,7 +104,11 @@ describe("cross-user access", () => {
     });
 
     await expect(
-      mallory.consumables.attach({ id: own.id, systemId: system.id }),
+      mallory.consumables.attach({
+        id: own.id,
+        systemId: system.id,
+        installedOn: "2026-02-01",
+      }),
     ).rejects.toThrow(/not found/i);
   });
 
@@ -131,6 +135,35 @@ describe("cross-user access", () => {
     );
     // And the refusal really left it alone.
     expect((await owner.invites.list()).invites[0]?.status).toBe("pending");
+  });
+});
+
+describe("the account router", () => {
+  it("exports only the caller's own rows", async () => {
+    const { caller } = await aliceWithSystemAndConsumable();
+    const mallory = await callerFor(db, bob);
+
+    const own = await caller.account.exportData();
+    const theirs = await mallory.account.exportData();
+
+    expect(own.systems).toHaveLength(1);
+    expect(own.consumables).toHaveLength(1);
+    expect(own.replacements).toHaveLength(1);
+    expect(theirs).toMatchObject({
+      systems: [],
+      consumables: [],
+      replacements: [],
+    });
+  });
+
+  it("keeps one person's digest choice from reaching another", async () => {
+    const alicesCaller = await callerFor(db, alice);
+    const bobsCaller = await callerFor(db, bob);
+
+    await alicesCaller.account.setDigestEnabled({ enabled: false });
+
+    expect((await alicesCaller.account.settings()).digestEnabled).toBe(false);
+    expect((await bobsCaller.account.settings()).digestEnabled).toBe(true);
   });
 });
 

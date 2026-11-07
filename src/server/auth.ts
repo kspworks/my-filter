@@ -8,9 +8,12 @@ import {
   negotiateLocaleIfSupported,
 } from "~/i18n/locale";
 import { db } from "~/server/db";
+import { deleteUserEverywhere } from "~/server/db/delete-user";
 import { newId } from "~/server/db/id";
 import { account, session, user, verification } from "~/server/db/schema/auth";
+import { demoGuard } from "~/server/demo-guard";
 import { createSignUpGate } from "~/server/invites/sign-up-gate";
+import { sendPasswordResetEmail } from "~/server/mail/password-reset";
 import {
   defaultUserLocale,
   saveUserLocale,
@@ -34,10 +37,31 @@ export const auth = betterAuth({
     // immediately rather than stuck behind a verification link nobody receives.
     requireEmailVerification: false,
     minPasswordLength: 8,
+    // A reset proves control of the mailbox, so anyone still signed in with the
+    // old password is signed out with it.
+    revokeSessionsOnPasswordReset: true,
+    // Never thrown: the caller's response must be the same for every address,
+    // and a mail failure is ours to log, not something to reveal.
+    sendResetPassword: async ({ user: resetUser, url }) => {
+      try {
+        await sendPasswordResetEmail(db, resetUser, url);
+      } catch (error) {
+        console.error("[auth] could not send a password reset", error);
+      }
+    },
   },
   user: {
-    // The signup form's "username" is a display name. Login is always by email.
+    // The signup form's name is a display name. Login is always by email.
     additionalFields: {},
+    deleteUser: {
+      enabled: true,
+      // Explicit rather than left to the library, which removes the user and
+      // its sessions and relies on `ON DELETE cascade` for the rest. See
+      // `~/server/db/delete-user` for why that is not enough here.
+      beforeDelete: async (deleted) => {
+        await deleteUserEverywhere(db, deleted.id);
+      },
+    },
   },
   // Invite-only registration when `INVITE_ONLY` is on; a no-op otherwise.
   hooks: {
@@ -97,7 +121,7 @@ export const auth = betterAuth({
     },
   },
   // Must stay last: lets better-auth set cookies from server actions.
-  plugins: [nextCookies()],
+  plugins: [demoGuard(), nextCookies()],
 });
 
 export type Session = typeof auth.$Infer.Session;

@@ -27,7 +27,7 @@ test("creates a cartridge through the select menus", async ({ page }) => {
     page.getByRole("heading", { name: `${MANUFACTURER} IX-1` }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Add consumable", exact: true })
+    .getByRole("button", { name: "Add cartridge", exact: true })
     .click();
 
   const dialog = page.getByRole("dialog");
@@ -45,9 +45,9 @@ test("creates a cartridge through the select menus", async ({ page }) => {
   await dialog.getByLabel("Interval unit").click();
   await page.getByRole("option", { name: "days", exact: true }).click();
 
-  await dialog.getByRole("button", { name: "Add consumable" }).click();
+  await dialog.getByRole("button", { name: "Add cartridge" }).click();
 
-  await expect(page.getByText("Consumable added.")).toBeVisible();
+  await expect(page.getByText("Cartridge added.")).toBeVisible();
   await expect(page.getByText("Interaction membrane")).toBeVisible();
   await expect(page.getByText(/Every 90 days/)).toBeVisible();
 });
@@ -80,14 +80,29 @@ test("detaches and re-attaches through the row menu", async ({ page }) => {
   ).toHaveCount(0);
   await page.getByRole("menuitem", { name: "Detach" }).click();
   await expect(
-    page.getByText("Detached. The item is now unassigned."),
+    page.getByText("Detached. The cartridge is now a spare."),
   ).toBeVisible();
+
+  // A spare has no schedule running, so nothing about it can be due.
+  await expect(page.getByText("Spare, on the shelf")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Mark replaced" })).toHaveCount(
+    0,
+  );
 
   await page.getByRole("button", { name: "More actions" }).first().click();
   // And now that it is free, nothing to detach from.
   await expect(page.getByRole("menuitem", { name: "Detach" })).toHaveCount(0);
-  await page.getByRole("menuitem", { name: `${MANUFACTURER} IX-1` }).click();
-  await expect(page.getByText("Attached.")).toBeVisible();
+  await page.getByRole("menuitem", { name: "Install" }).click();
+
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("System").click();
+  await page.getByRole("option", { name: `${MANUFACTURER} IX-1` }).click();
+  // The date it already had, so the log below stays as the next test expects.
+  await dialog.getByLabel("Installed on").fill("2026-03-15");
+  await dialog.getByRole("button", { name: "Install" }).click();
+
+  await expect(page.getByText("Installed.")).toBeVisible();
+  await expect(page.getByText("Spare, on the shelf")).toHaveCount(0);
 });
 
 test("opens the service history from the row menu", async ({ page }) => {
@@ -167,7 +182,7 @@ test("offers the order link in the row menu once there is one", async ({
     .getByLabel("Where to order")
     .fill("https://shop.example.com/interaction-membrane");
   await dialog.getByRole("button", { name: "Save changes" }).click();
-  await expect(page.getByText("Consumable updated.")).toBeVisible();
+  await expect(page.getByText("Cartridge updated.")).toBeVisible();
 
   await page.getByRole("button", { name: "More actions" }).first().click();
   // Asserted rather than clicked: following it would leave the app.

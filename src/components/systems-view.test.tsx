@@ -35,8 +35,8 @@ describe("with systems", () => {
     const link = await screen.findByRole("link", { name: /Aquafilter/ });
     expect(link).toHaveAttribute("href", `/systems/${system.id}`);
     expect(link).toHaveTextContent("Installed 10 Jan 2026");
-    // Through the ICU plural, not a hand-built "3 consumables".
-    expect(link).toHaveTextContent("3 consumables");
+    // Through the ICU plural, not a hand-built "3 cartridges".
+    expect(link).toHaveTextContent("3 cartridges");
   });
 
   it("uses the singular for a system with one cartridge", async () => {
@@ -56,7 +56,7 @@ describe("with systems", () => {
 
     app.render(<SystemsView />);
 
-    expect(await screen.findByText("1 consumable")).toBeInTheDocument();
+    expect(await screen.findByText("1 cartridge")).toBeInTheDocument();
   });
 });
 

@@ -36,3 +36,18 @@ export const zId = z.string().refine(isCuid, "Invalid id");
 export const zDateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Expected a YYYY-MM-DD date");
+
+/**
+ * The date in the furthest-ahead zone on Earth (UTC+14). The server does not
+ * know the viewer's calendar and must not guess it, so it only refuses a date
+ * that is still in the future for everyone. The forms set `max` to the viewer's
+ * own today, which is the check people actually meet.
+ */
+const latestToday = () =>
+  new Date(Date.now() + 14 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+/** Something that has already happened: an installation or a replacement. */
+export const zPastDate = zDateString.refine(
+  (value) => value <= latestToday(),
+  "Expected a date that is not in the future",
+);

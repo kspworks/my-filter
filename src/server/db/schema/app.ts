@@ -120,6 +120,24 @@ export const userSettings = sqliteTable("user_settings", {
 });
 
 /**
+ * The presence of a row means "stop emailing me", and the digest is on for
+ * everyone else.
+ *
+ * A table rather than a column on `user_settings`, because that row needs a
+ * `locale`: writing one just to record this would put down a language nobody
+ * chose, which is the one thing `saveUserLocale` and `defaultUserLocale` exist
+ * to avoid.
+ */
+export const digestOptOuts = sqliteTable("digest_opt_outs", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+/**
  * One row per notice actually sent, and the unique index *is* the trigger rule:
  * a warning and a due notice each fire on the first run that crosses their
  * threshold, and never again for that `due_on`.

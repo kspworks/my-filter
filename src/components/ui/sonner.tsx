@@ -34,7 +34,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: "cn-toast !font-sans",
+          // The toast is the only way to reach Undo, so it gets a phone-sized
+          // target even though the rest of the toast stays compact.
+          actionButton: "max-sm:!h-11 max-sm:!px-4",
         },
       }}
       {...props}

@@ -30,7 +30,7 @@ describe("the links", () => {
       "href",
       "/systems",
     );
-    expect(screen.getByRole("link", { name: "Consumables" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Cartridges" })).toHaveAttribute(
       "href",
       "/consumables",
     );
@@ -55,7 +55,7 @@ describe("the links", () => {
     ["/systems", "Systems"],
     // A detail page still highlights its section.
     ["/systems/abc", "Systems"],
-    ["/consumables", "Consumables"],
+    ["/consumables", "Cartridges"],
   ])("highlights %s as %s", async (pathname, active) => {
     pathnameRef.current = pathname;
 

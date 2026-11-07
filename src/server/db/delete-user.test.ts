@@ -111,6 +111,7 @@ describe("findUserFootprint", () => {
       replacements: 2,
       notifications: 1,
       settings: 1,
+      digestOptOuts: 0,
       invites: 1,
       sessions: 1,
       accounts: 1,

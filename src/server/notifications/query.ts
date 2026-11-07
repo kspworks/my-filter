@@ -1,7 +1,12 @@
-import { eq, ne } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, ne } from "drizzle-orm";
 import { DEMO_EMAIL } from "~/lib/demo";
 import type { DbOrTransaction } from "~/server/db";
-import { consumables, systems, userSettings } from "~/server/db/schema/app";
+import {
+  consumables,
+  digestOptOuts,
+  systems,
+  userSettings,
+} from "~/server/db/schema/app";
 import { user } from "~/server/db/schema/auth";
 import type { NotifiableRow } from "~/server/notifications/select";
 
@@ -20,6 +25,11 @@ import type { NotifiableRow } from "~/server/notifications/select";
  * The seeded demo account is left out here, at the source, rather than after
  * planning: its cartridges are overdue on purpose, and filtering any later would
  * still count them as candidates and claim rows in `notification_log`.
+ *
+ * The same goes for two more exclusions. A spare is a cartridge in a box with
+ * no schedule running, and somebody who turned the digest off in Settings is
+ * not a reader. If they turn it back on, whatever is overdue by then gets its
+ * one notice, because no claim was ever made for it.
  */
 export async function loadNotifiable(
   db: DbOrTransaction,
@@ -42,5 +52,12 @@ export async function loadNotifiable(
     .innerJoin(user, eq(consumables.userId, user.id))
     .leftJoin(systems, eq(consumables.systemId, systems.id))
     .leftJoin(userSettings, eq(userSettings.userId, user.id))
-    .where(ne(user.email, DEMO_EMAIL));
+    .leftJoin(digestOptOuts, eq(digestOptOuts.userId, user.id))
+    .where(
+      and(
+        ne(user.email, DEMO_EMAIL),
+        isNotNull(consumables.systemId),
+        isNull(digestOptOuts.userId),
+      ),
+    );
 }

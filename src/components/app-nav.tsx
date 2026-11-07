@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueryClient } from "@tanstack/react-query";
-import { Droplets, LogOut } from "lucide-react";
+import { Droplets, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -46,7 +46,10 @@ export function AppNav({
       {/* Below `md` the links drop to a second row that scrolls sideways rather
           than hiding behind a menu, so they stay one tap away. */}
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 sm:px-6 sm:py-3 md:flex-nowrap">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-semibold max-sm:min-h-11"
+        >
           <Droplets className="size-5 text-brand" aria-hidden />
           {tApp("name")}
         </Link>
@@ -62,7 +65,7 @@ export function AppNav({
                 key={link.href}
                 href={link.href}
                 className={cn(
-                  "shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors",
+                  "inline-flex shrink-0 items-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition-colors max-sm:min-h-11",
                   active
                     ? "bg-muted font-medium text-foreground"
                     : "text-muted-foreground hover:text-foreground",
@@ -75,20 +78,29 @@ export function AppNav({
         </nav>
 
         <div className="ml-auto flex items-center gap-1">
-          <span className="mr-2 hidden max-w-48 truncate text-sm text-muted-foreground sm:inline">
+          <Link
+            href="/settings"
+            className="mr-2 hidden max-w-48 truncate text-sm text-muted-foreground transition-colors hover:text-foreground sm:inline"
+          >
             {userName}
-          </span>
+          </Link>
           <LanguageSwitcher />
           <ThemeToggle />
+          {/* A phone header has room for three controls at a usable size, so
+              signing out moves to the bottom of Settings there. */}
+          <Button asChild variant="ghost" size="icon" className="sm:hidden">
+            <Link href="/settings" aria-label={t("settings")}>
+              <Settings aria-hidden />
+            </Link>
+          </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="max-sm:px-2"
+            className="max-sm:hidden"
             onClick={handleSignOut}
           >
             <LogOut aria-hidden />
-            {/* Still the button's accessible name when only the icon shows. */}
-            <span className="sr-only sm:not-sr-only">{t("signOut")}</span>
+            {t("signOut")}
           </Button>
         </div>
       </div>

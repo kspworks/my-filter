@@ -62,7 +62,7 @@ describe("empty state", () => {
 
     expect(await screen.findByText("Nothing tracked yet")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /add consumable/i }),
+      screen.getByRole("button", { name: /add cartridge/i }),
     ).toBeDisabled();
     expect(screen.getByRole("button", { name: /add system/i })).toBeEnabled();
   });
@@ -78,7 +78,7 @@ describe("empty state", () => {
     expect(screen.queryByText("Nothing tracked yet")).not.toBeInTheDocument();
     // A system exists, so a cartridge can now be attached to something.
     expect(
-      screen.getByRole("button", { name: /add consumable/i }),
+      screen.getByRole("button", { name: /add cartridge/i }),
     ).toBeEnabled();
   });
 });
@@ -111,41 +111,139 @@ describe("status tiles", () => {
   });
 });
 
+describe("needs attention", () => {
+  it("lists what is due across every system, most urgent first", async () => {
+    const first = await addSystem("Aquafilter", "RO-6");
+    const second = await addSystem("Ecosoft", "P'URE");
+    // Due in a few days, in the system that sorts first.
+    await addConsumable("Soon", "2026-03-20", first.id);
+    // Long overdue, in the system that sorts second.
+    await addConsumable("Overdue", "2025-06-01", second.id);
+    await addConsumable("Fine", "2026-09-01", first.id);
+
+    const { container } = app.render(<DashboardView />);
+
+    const heading = await screen.findByText("Needs attention");
+    const list = heading.closest("div[data-slot='card']");
+    expect(list).toHaveTextContent("Overdue");
+    expect(list).toHaveTextContent("Soon");
+    expect(list).not.toHaveTextContent("Fine");
+
+    const rendered = container.textContent ?? "";
+    expect(rendered.indexOf("Overdue")).toBeLessThan(rendered.indexOf("Soon"));
+    expect(rendered.indexOf("Soon")).toBeLessThan(rendered.indexOf("Fine"));
+  });
+
+  it("says which system each cartridge belongs to", async () => {
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Overdue", "2025-06-01", system.id);
+
+    app.render(<DashboardView />);
+
+    expect(await screen.findByText(/Aquafilter RO-6/)).toBeInTheDocument();
+  });
+
+  it("is not there when nothing is due", async () => {
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Fine", "2026-09-01", system.id);
+
+    app.render(<DashboardView />);
+
+    await screen.findByText("Fine");
+    expect(screen.queryByText("Needs attention")).not.toBeInTheDocument();
+  });
+
+  it("drops a system whose cartridges are all listed above", async () => {
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Overdue", "2025-06-01", system.id);
+
+    app.render(<DashboardView />);
+
+    await screen.findByText("Needs attention");
+    expect(
+      screen.queryByRole("link", { name: "Aquafilter RO-6" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("the status tiles as filters", () => {
+  it("narrows the list to one status and back again", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Overdue", "2025-06-01", system.id);
+    await addConsumable("Fine", "2026-09-01", system.id);
+
+    app.render(<DashboardView />);
+    await screen.findByText("Fine");
+
+    const tile = screen.getByRole("button", { name: /On schedule/ });
+    await user.click(tile);
+
+    expect(tile).toHaveAttribute("aria-pressed", "true");
+    expect(screen.queryByText("Overdue", { selector: "span" })).toBeNull();
+    expect(screen.getByText("Fine")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Show all" }));
+
+    expect(await screen.findByText("Needs attention")).toBeInTheDocument();
+    expect(tile).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("disables a tile with nothing behind it", async () => {
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Fine", "2026-09-01", system.id);
+
+    app.render(<DashboardView />);
+    await screen.findByText("Fine");
+
+    expect(screen.getByRole("button", { name: /Overdue/ })).toBeDisabled();
+  });
+});
+
+describe("spares", () => {
+  it("leaves them out of every count, however old they are", async () => {
+    await addConsumable("Boxed", "2024-01-01");
+
+    app.render(<DashboardView />);
+
+    await screen.findByText("Boxed");
+    expect(screen.getByRole("button", { name: /Overdue/ })).toHaveTextContent(
+      "0",
+    );
+    expect(
+      screen.getByRole("button", { name: /On schedule/ }),
+    ).toHaveTextContent("0");
+    expect(screen.queryByText("Needs attention")).not.toBeInTheDocument();
+  });
+});
+
 describe("grouping", () => {
-  it("orders groups by urgency and always puts the spare shelf last", async () => {
-    const urgent = await app.caller.systems.create({
-      manufacturer: "Urgent",
-      model: "Unit",
-      installedOn: "2024-01-01",
-    });
-    const relaxed = await app.caller.systems.create({
-      manufacturer: "Relaxed",
-      model: "Unit",
-      installedOn: "2024-01-01",
-    });
-    await addConsumable("Very overdue", "2025-01-01", urgent.id);
-    await addConsumable("Comfortable", "2026-09-01", relaxed.id);
-    // No systemId: lands on the spare shelf, and is the most overdue of all.
+  it("orders systems and always puts the spare shelf last", async () => {
+    const first = await addSystem("Aquafilter", "Unit");
+    await addSystem("Bare", "Unit");
+    await addSystem("Cupboard", "Unit");
+    await addConsumable("Comfortable", "2026-09-01", first.id);
     await addConsumable("Spare", "2024-01-01");
 
     app.render(<DashboardView />);
 
-    await screen.findByText("Urgent Unit");
-    // Every group title is a link, and nothing else on the page is, so document
-    // order here is exactly the group order.
+    await screen.findByText("Aquafilter Unit");
+    // The nav is not rendered here, so these are exactly the group titles.
     const titles = screen.getAllByRole("link").map((node) => node.textContent);
 
-    expect(titles).toEqual(["Urgent Unit", "Relaxed Unit", "Unassigned"]);
+    // Empty groups keep the server's manufacturer order among themselves.
+    expect(titles).toEqual([
+      "Aquafilter Unit",
+      "Bare Unit",
+      "Cupboard Unit",
+      "Spares",
+    ]);
   });
 
   it("sorts cartridges within a group most urgent first", async () => {
-    const system = await app.caller.systems.create({
-      manufacturer: "Aquafilter",
-      model: "RO-6",
-      installedOn: "2024-01-01",
-    });
-    await addConsumable("Later", "2026-08-01", system.id);
-    await addConsumable("Sooner", "2025-06-01", system.id);
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Later", "2026-09-01", system.id);
+    await addConsumable("Sooner", "2026-06-01", system.id);
 
     const { container } = app.render(<DashboardView />);
 
@@ -155,13 +253,9 @@ describe("grouping", () => {
     expect(rendered.indexOf("Sooner")).toBeLessThan(rendered.indexOf("Later"));
   });
 
-  it("links a system group to its detail page and the shelf to consumables", async () => {
-    const system = await app.caller.systems.create({
-      manufacturer: "Aquafilter",
-      model: "RO-6",
-      installedOn: "2024-01-01",
-    });
-    await addConsumable("Attached", "2026-01-01", system.id);
+  it("links a system group to its detail page and the shelf to cartridges", async () => {
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Attached", "2026-09-01", system.id);
     await addConsumable("Spare", "2026-01-01");
 
     app.render(<DashboardView />);
@@ -169,7 +263,7 @@ describe("grouping", () => {
     expect(
       await screen.findByRole("link", { name: "Aquafilter RO-6" }),
     ).toHaveAttribute("href", `/systems/${system.id}`);
-    expect(screen.getByRole("link", { name: "Unassigned" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Spares" })).toHaveAttribute(
       "href",
       "/consumables",
     );
@@ -184,46 +278,20 @@ describe("grouping", () => {
       "div[data-slot='card']",
     );
 
-    expect(group).toHaveTextContent("0 items");
+    expect(group).toHaveTextContent("0 cartridges");
     expect(group).toHaveTextContent(/No cartridges tracked yet/);
     expect(
       await screen.findByRole("link", { name: "Aquafilter RO-6" }),
     ).toHaveAttribute("href", `/systems/${system.id}`);
   });
 
-  it("sorts empty systems after the urgent ones and above the spare shelf", async () => {
-    const urgent = await addSystem("Urgent", "Unit");
-    // Two empty systems, so the comparator meets Infinity on both sides.
-    await addSystem("Bare", "Unit");
-    await addSystem("Cupboard", "Unit");
-    await addConsumable("Very overdue", "2025-01-01", urgent.id);
-    await addConsumable("Spare", "2024-01-01");
-
-    app.render(<DashboardView />);
-
-    await screen.findByText("Urgent Unit");
-    const titles = screen.getAllByRole("link").map((node) => node.textContent);
-
-    // Empty groups keep the server's manufacturer order among themselves.
-    expect(titles).toEqual([
-      "Urgent Unit",
-      "Bare Unit",
-      "Cupboard Unit",
-      "Unassigned",
-    ]);
-  });
-
   it("counts the cartridges in a group through the plural message", async () => {
-    const system = await app.caller.systems.create({
-      manufacturer: "Aquafilter",
-      model: "RO-6",
-      installedOn: "2024-01-01",
-    });
-    await addConsumable("Only one", "2026-01-01", system.id);
+    const system = await addSystem("Aquafilter", "RO-6");
+    await addConsumable("Only one", "2026-09-01", system.id);
 
     app.render(<DashboardView />);
 
-    expect(await screen.findByText("1 item")).toBeInTheDocument();
+    expect(await screen.findByText("1 cartridge")).toBeInTheDocument();
   });
 });
 

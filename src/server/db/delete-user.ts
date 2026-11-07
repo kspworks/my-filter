@@ -3,6 +3,7 @@ import type { DbOrTransaction } from "~/server/db";
 import {
   consumableReplacements,
   consumables,
+  digestOptOuts,
   invites,
   notificationLog,
   systems,
@@ -26,8 +27,9 @@ import { account, session, user } from "~/server/db/schema/auth";
  * somebody else and stays, with `used_by_user_id` cleared — the same `set null`
  * the schema declares, done by hand for the same reason.
  *
- * `verification` is deliberately left alone: it has no `user_id`, and nothing in
- * this app writes to it (there is no email-verification flow).
+ * `verification` is deliberately left alone: it has no `user_id`. The only rows
+ * this app puts there are password-reset tokens, which expire within the hour
+ * and point at nothing once the account is gone.
  */
 
 export type FootprintCounts = {
@@ -36,6 +38,7 @@ export type FootprintCounts = {
   replacements: number;
   notifications: number;
   settings: number;
+  digestOptOuts: number;
   invites: number;
   sessions: number;
   accounts: number;
@@ -55,6 +58,7 @@ const userScopedTables = [
   consumables,
   systems,
   userSettings,
+  digestOptOuts,
   invites,
   session,
   account,
@@ -103,6 +107,7 @@ export async function findUserFootprint(
     replacementCount,
     notificationCount,
     settingsCount,
+    digestOptOutCount,
     inviteCount,
     sessionCount,
     accountCount,
@@ -112,6 +117,7 @@ export async function findUserFootprint(
     countRows(db, consumableReplacements, found.id),
     countRows(db, notificationLog, found.id),
     countRows(db, userSettings, found.id),
+    countRows(db, digestOptOuts, found.id),
     countRows(db, invites, found.id),
     countRows(db, session, found.id),
     countRows(db, account, found.id),
@@ -123,6 +129,7 @@ export async function findUserFootprint(
     replacements: replacementCount,
     notifications: notificationCount,
     settings: settingsCount,
+    digestOptOuts: digestOptOutCount,
     invites: inviteCount,
     sessions: sessionCount,
     accounts: accountCount,

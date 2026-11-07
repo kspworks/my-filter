@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 import { PresetPicker } from "~/components/preset-picker";
+import type { ConsumableType } from "~/lib/consumables";
+import { todayString } from "~/lib/due-date";
 import {
   screen,
   setupApp,
@@ -12,7 +14,10 @@ let app: TestApp;
 let onOpenChange: Mock<(open: boolean) => void>;
 let systemId: string;
 
-async function open(locale: "en" | "uk" = "en") {
+async function open(
+  locale: "en" | "uk" = "en",
+  tracked: ConsumableType[] = [],
+) {
   app = await setupApp({ locale });
   onOpenChange = vi.fn();
   const system = await app.caller.systems.create({
@@ -26,7 +31,7 @@ async function open(locale: "en" | "uk" = "en") {
       open
       onOpenChange={onOpenChange}
       systemId={systemId}
-      installedOn={system.installedOn}
+      trackedTypes={tracked}
     />,
   );
   return userEvent.setup();
@@ -58,12 +63,33 @@ describe("choosing a set", () => {
     expect(screen.getByRole("button", { name: /Add set/ })).toBeEnabled();
   });
 
-  it("defaults the date to the system's installation", async () => {
+  it("defaults the date to today, not the system's installation", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-14T12:00:00"));
     await open();
 
     expect(
       await screen.findByLabelText("Installed / last changed"),
-    ).toHaveValue("2026-01-10");
+    ).toHaveValue("2026-09-14");
+    vi.useRealTimers();
+  });
+
+  it("marks what the system already has and disables a set with nothing new", async () => {
+    await open("en", ["sediment", "carbon_gac", "carbon_block"]);
+
+    const set = await screen.findByRole("button", {
+      name: /3-stage pre-filter block/,
+    });
+    expect(set).toBeDisabled();
+    expect(set).toHaveTextContent("Everything in this set is already tracked.");
+    expect(
+      screen.getByRole("button", { name: /Classic 5-stage RO/ }),
+    ).toBeEnabled();
+    expect(
+      screen.getAllByText(
+        "Sediment PP 5 micron — every 3 months (already tracked)",
+      ).length,
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -80,7 +106,7 @@ describe("applying a set", () => {
     expect(apply).toBeDisabled();
 
     release();
-    expect(await screen.findByText("Added 3 consumables.")).toBeInTheDocument();
+    expect(await screen.findByText("Added 3 cartridges.")).toBeInTheDocument();
     expect(await app.caller.consumables.list({ systemId })).toHaveLength(3);
   });
 
@@ -90,12 +116,12 @@ describe("applying a set", () => {
     await actor.click(await screen.findByText("3-stage pre-filter block"));
     await actor.click(screen.getByRole("button", { name: /Add set/ }));
 
-    expect(await screen.findByText("Added 3 consumables.")).toBeInTheDocument();
+    expect(await screen.findByText("Added 3 cartridges.")).toBeInTheDocument();
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
 
     const created = await app.caller.consumables.list({ systemId });
     expect(created).toHaveLength(3);
-    expect(created.every((item) => item.lastChangedOn === "2026-01-10")).toBe(
+    expect(created.every((item) => item.lastChangedOn === todayString())).toBe(
       true,
     );
   });
@@ -111,7 +137,7 @@ describe("applying a set", () => {
     await actor.click(screen.getByText("3-stage pre-filter block"));
     await actor.click(screen.getByRole("button", { name: /Add set/ }));
 
-    await screen.findByText("Added 3 consumables.");
+    await screen.findByText("Added 3 cartridges.");
     const created = await app.caller.consumables.list({ systemId });
     expect(created.every((item) => item.lastChangedOn === "2026-05-05")).toBe(
       true,

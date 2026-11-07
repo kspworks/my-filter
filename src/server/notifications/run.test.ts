@@ -48,7 +48,7 @@ function run(today = TODAY) {
 async function cartridge(
   userId: string,
   days: number,
-  { name = "Sediment PP", on = TODAY } = {},
+  { name = "Sediment PP", on = TODAY, interval = 30 } = {},
 ) {
   const caller = await callerFor(db, userId);
   const system = await caller.systems.create({
@@ -60,9 +60,9 @@ async function cartridge(
     systemId: system.id,
     type: "sediment",
     name,
-    intervalValue: 30,
+    intervalValue: interval,
     intervalUnit: "days",
-    lastChangedOn: nextDueOn(on, days - 30, "days"),
+    lastChangedOn: nextDueOn(on, days - interval, "days"),
   });
 }
 
@@ -265,9 +265,52 @@ describe("when sending fails", () => {
   });
 });
 
+describe("who is left out", () => {
+  it("never reminds anyone about a spare", async () => {
+    const caller = await callerFor(db, alice);
+    await caller.consumables.create({
+      type: "sediment",
+      name: "Boxed",
+      intervalValue: 30,
+      intervalUnit: "days",
+      lastChangedOn: "2025-01-01",
+    });
+
+    const summary = await run();
+
+    expect(mail.sent).toEqual([]);
+    expect(summary.candidates).toBe(0);
+  });
+
+  it("skips somebody who turned the digest off, without claiming anything", async () => {
+    await cartridge(alice, 0);
+    const caller = await callerFor(db, alice);
+    await caller.account.setDigestEnabled({ enabled: false });
+
+    const summary = await run();
+
+    expect(mail.sent).toEqual([]);
+    expect(summary.candidates).toBe(0);
+    expect(await logRows()).toEqual([]);
+  });
+
+  it("catches up with what is still due when it is turned back on", async () => {
+    await cartridge(alice, 0);
+    const caller = await callerFor(db, alice);
+    await caller.account.setDigestEnabled({ enabled: false });
+    await run();
+
+    await caller.account.setDigestEnabled({ enabled: true });
+    await run();
+
+    expect(mail.sent).toHaveLength(1);
+  });
+});
+
 describe("a quiet day", () => {
   it("sends nothing and records nothing", async () => {
-    await cartridge(alice, 90);
+    // Longer than `days`, because a date in the future is refused.
+    await cartridge(alice, 90, { interval: 365 });
 
     const summary = await run();
 

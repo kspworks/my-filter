@@ -7,17 +7,12 @@ import {
   consumables,
   systems,
 } from "~/server/db/schema/app";
-import {
-  protectedProcedure,
-  router,
-  zDateString,
-  zId,
-} from "~/server/trpc/init";
+import { protectedProcedure, router, zId, zPastDate } from "~/server/trpc/init";
 
 const systemInput = {
   manufacturer: z.string().trim().min(1).max(120),
   model: z.string().trim().min(1).max(120),
-  installedOn: zDateString,
+  installedOn: zPastDate,
   notes: z.string().trim().max(2000).nullish(),
 };
 
@@ -132,7 +127,7 @@ export const systemsRouter = router({
       z.object({
         systemId: zId,
         presetId: z.string(),
-        lastChangedOn: zDateString.optional(),
+        lastChangedOn: zPastDate.optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -161,10 +156,25 @@ export const systemsRouter = router({
       const lastChangedOn = input.lastChangedOn ?? system.installedOn;
 
       return ctx.db.transaction(async (tx) => {
+        // By type rather than by name: the name is free text in whichever
+        // language it was added in. Applying a set fills in what is missing,
+        // so applying it twice changes nothing.
+        const tracked = await tx
+          .select({ type: consumables.type })
+          .from(consumables)
+          .where(eq(consumables.systemId, system.id));
+        const trackedTypes = new Set(tracked.map((item) => item.type));
+        const missing = preset.items.filter(
+          (item) => !trackedTypes.has(item.type),
+        );
+        const skipped = preset.items.length - missing.length;
+
+        if (missing.length === 0) return { created: 0, skipped };
+
         const created = await tx
           .insert(consumables)
           .values(
-            preset.items.map((item) => ({
+            missing.map((item) => ({
               userId: ctx.user.id,
               systemId: system.id,
               type: item.type,
@@ -191,7 +201,7 @@ export const systemsRouter = router({
           })),
         );
 
-        return { created: created.length };
+        return { created: created.length, skipped };
       });
     }),
 });

@@ -254,6 +254,7 @@ describe("attach and detach", () => {
         await caller.consumables.attach({
           id: consumable.id,
           systemId: system.id,
+          installedOn: consumable.lastChangedOn,
         })
       ).systemId,
     ).toBe(system.id);
@@ -268,7 +269,11 @@ describe("attach and detach", () => {
     await caller.systems.delete({ id: system.id });
 
     await expect(
-      caller.consumables.attach({ id: consumable.id, systemId: system.id }),
+      caller.consumables.attach({
+        id: consumable.id,
+        systemId: system.id,
+        installedOn: "2026-01-10",
+      }),
     ).rejects.toThrow(/not found/i);
   });
 });
@@ -407,5 +412,102 @@ describe("delete", () => {
     expect(await caller.consumables.list()).toEqual([]);
     // A log row outliving its cartridge would be an orphan nothing can reach.
     expect(await db.select().from(consumableReplacements)).toEqual([]);
+  });
+});
+
+async function seeded() {
+  const consumable = await caller.consumables.create({
+    type: "sediment",
+    name: "Sediment PP",
+    intervalValue: 6,
+    intervalUnit: "months",
+    lastChangedOn: "2026-01-10",
+  });
+  return { caller, consumable };
+}
+
+describe("dates that have not happened", () => {
+  it("refuses a replacement in the future for everyone on Earth", async () => {
+    const { caller, consumable } = await seeded();
+
+    await expect(
+      caller.consumables.markReplaced({
+        id: consumable.id,
+        changedOn: "2999-01-01",
+      }),
+    ).rejects.toThrow(/future/);
+  });
+
+  it("accepts a viewer's today when it is already tomorrow in UTC", async () => {
+    const { caller, consumable } = await seeded();
+    // A time zone 14 hours ahead must always be able to say "today".
+    const aheadOfUtc = new Date(Date.now() + 14 * 3_600_000)
+      .toISOString()
+      .slice(0, 10);
+
+    const updated = await caller.consumables.markReplaced({
+      id: consumable.id,
+      changedOn: aheadOfUtc,
+    });
+
+    expect(updated.lastChangedOn).toBe(aheadOfUtc);
+  });
+});
+
+describe("installing a spare", () => {
+  async function aSpareAndASystem() {
+    const { caller, consumable } = await seeded();
+    await caller.consumables.detach({ id: consumable.id });
+    const system = await caller.systems.create({
+      manufacturer: "Ecosoft",
+      model: "P'URE",
+      installedOn: "2026-01-10",
+    });
+    return { caller, consumable, system };
+  }
+
+  it("logs the date and starts the schedule from it", async () => {
+    const { caller, consumable, system } = await aSpareAndASystem();
+
+    const updated = await caller.consumables.attach({
+      id: consumable.id,
+      systemId: system.id,
+      installedOn: "2026-08-01",
+    });
+
+    expect(updated).toMatchObject({
+      systemId: system.id,
+      lastChangedOn: "2026-08-01",
+    });
+    expect(
+      (await caller.consumables.history({ id: consumable.id }))[0]?.changedOn,
+    ).toBe("2026-08-01");
+  });
+
+  it("writes nothing to the log when the date has not moved", async () => {
+    const { caller, consumable, system } = await aSpareAndASystem();
+    const before = await caller.consumables.history({ id: consumable.id });
+
+    await caller.consumables.attach({
+      id: consumable.id,
+      systemId: system.id,
+      installedOn: consumable.lastChangedOn,
+    });
+
+    expect(await caller.consumables.history({ id: consumable.id })).toEqual(
+      before,
+    );
+  });
+
+  it("refuses a date in the future", async () => {
+    const { caller, consumable, system } = await aSpareAndASystem();
+
+    await expect(
+      caller.consumables.attach({
+        id: consumable.id,
+        systemId: system.id,
+        installedOn: "2999-01-01",
+      }),
+    ).rejects.toThrow(/future/);
   });
 });

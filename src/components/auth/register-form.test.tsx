@@ -29,7 +29,7 @@ async function fill({
   password = "correct-horse",
 } = {}) {
   const actor = userEvent.setup();
-  await actor.type(screen.getByLabelText("Username"), name);
+  await actor.type(screen.getByLabelText("Name"), name);
   await actor.type(screen.getByLabelText("Email"), email);
   await actor.type(screen.getByLabelText("Password"), password);
   await actor.click(screen.getByRole("button", { name: "Create account" }));

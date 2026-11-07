@@ -9,12 +9,7 @@ import {
   consumables,
   systems,
 } from "~/server/db/schema/app";
-import {
-  protectedProcedure,
-  router,
-  zDateString,
-  zId,
-} from "~/server/trpc/init";
+import { protectedProcedure, router, zId, zPastDate } from "~/server/trpc/init";
 
 const consumableFields = {
   type: z.enum(CONSUMABLE_TYPES),
@@ -163,7 +158,7 @@ export const consumablesRouter = router({
       z.object({
         ...consumableFields,
         systemId: zId.nullish(),
-        lastChangedOn: zDateString,
+        lastChangedOn: zPastDate,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -256,31 +251,51 @@ export const consumablesRouter = router({
       return deleted;
     }),
 
+  /**
+   * Installing a cartridge is the moment its schedule starts, so the date is
+   * required and goes through the log like any other service event. A spare has
+   * no due date until this happens, however long it sat in its box.
+   */
   attach: protectedProcedure
-    .input(z.object({ id: zId, systemId: zId }))
+    .input(z.object({ id: zId, systemId: zId, installedOn: zPastDate }))
     .mutation(async ({ ctx, input }) => {
       // Checked separately: without this, a user could park their own consumable
       // on somebody else's system by guessing an id.
       await assertOwnsSystem(ctx.db, input.systemId, ctx.user.id, ctx.t);
 
-      const [updated] = await ctx.db
-        .update(consumables)
-        .set({ systemId: input.systemId })
-        .where(
-          and(
-            eq(consumables.id, input.id),
-            eq(consumables.userId, ctx.user.id),
-          ),
-        )
-        .returning(consumableColumns);
+      return ctx.db.transaction(async (tx) => {
+        const [updated] = await tx
+          .update(consumables)
+          .set({ systemId: input.systemId })
+          .where(
+            and(
+              eq(consumables.id, input.id),
+              eq(consumables.userId, ctx.user.id),
+            ),
+          )
+          .returning(consumableColumns);
 
-      if (!updated) {
-        throw new TRPCError({
-          code: "NOT_FOUND",
-          message: ctx.t("errors.consumableNotFound"),
-        });
-      }
-      return updated;
+        if (!updated) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: ctx.t("errors.consumableNotFound"),
+          });
+        }
+
+        // The same date again means a cartridge going back on a system with
+        // its schedule unchanged, which is not a service event.
+        if (input.installedOn !== updated.lastChangedOn) {
+          await tx.insert(consumableReplacements).values({
+            consumableId: input.id,
+            userId: ctx.user.id,
+            changedOn: input.installedOn,
+            note: null,
+          });
+          await syncLastChanged(tx, input.id, ctx.user.id);
+        }
+
+        return selectConsumable(tx, input.id);
+      });
     }),
 
   detach: protectedProcedure
@@ -311,7 +326,7 @@ export const consumablesRouter = router({
     .input(
       z.object({
         id: zId,
-        changedOn: zDateString,
+        changedOn: zPastDate,
         note: z.string().trim().max(500).nullish(),
       }),
     )

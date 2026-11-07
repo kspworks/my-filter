@@ -91,6 +91,13 @@ export function LoginForm({
             </p>
           ) : null}
 
+          <Link
+            className="-mt-2 text-sm text-muted-foreground hover:text-foreground hover:underline max-sm:py-2"
+            href="/forgot-password"
+          >
+            {t("forgotLink")}
+          </Link>
+
           <Button
             type="submit"
             disabled={pending}

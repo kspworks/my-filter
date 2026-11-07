@@ -70,7 +70,7 @@ describe("when it does", () => {
     expect(
       await screen.findByText(/No cartridges tracked/),
     ).toBeInTheDocument();
-    expect(screen.getByText("Consumables (0)")).toBeInTheDocument();
+    expect(screen.getByText("Cartridges (0)")).toBeInTheDocument();
   });
 
   it("lists the cartridges it has, most urgent first", async () => {
@@ -82,7 +82,7 @@ describe("when it does", () => {
 
     const { container } = app.render(<SystemDetailView systemId={system.id} />);
 
-    expect(await screen.findByText("Consumables (3)")).toBeInTheDocument();
+    expect(await screen.findByText("Cartridges (3)")).toBeInTheDocument();
     // Shortest interval first: all three were installed the same day.
     const text = container.textContent ?? "";
     expect(text).toContain("Sediment");
@@ -99,12 +99,12 @@ describe("deleting", () => {
     });
 
     app.render(<SystemDetailView systemId={system.id} />);
-    await screen.findByText("Consumables (3)");
+    await screen.findByText("Cartridges (3)");
     await actor.click(screen.getByRole("button", { name: "Delete system" }));
 
     expect(
       await screen.findByText(
-        "Its 3 consumables will be kept and moved to Unassigned, along with their history.",
+        "Its 3 cartridges will be kept and moved to Spares, along with their history.",
       ),
     ).toBeInTheDocument();
   });

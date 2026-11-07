@@ -36,7 +36,7 @@ test("every signed-in page fits a phone screen", async ({ page }, testInfo) => {
 
   await test.step("register", async () => {
     await page.goto("/register");
-    await page.getByLabel("Username").fill("Mobile tester");
+    await page.getByLabel("Name").fill("Mobile tester");
     await page.getByLabel("Email").fill("mobile@example.com");
     await page.getByLabel("Password").fill("correct-horse-battery");
     await page.getByRole("button", { name: "Create account" }).click();
@@ -45,12 +45,12 @@ test("every signed-in page fits a phone screen", async ({ page }, testInfo) => {
     ).toBeVisible();
   });
 
-  await test.step("the nav keeps every link and sign-out reachable", async () => {
-    for (const name of ["Dashboard", "Systems", "Consumables"]) {
+  await test.step("the nav keeps every link and Settings reachable", async () => {
+    for (const name of ["Dashboard", "Systems", "Cartridges"]) {
       await expect(page.getByRole("link", { name })).toBeVisible();
     }
     // Icon-only at this width, but still named.
-    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Settings" })).toBeVisible();
     await expectNoHorizontalScroll(page);
   });
 
@@ -72,8 +72,12 @@ test("every signed-in page fits a phone screen", async ({ page }, testInfo) => {
     // The dialog is taller than a short phone, so its footer must scroll into reach.
     await page.getByText("3-stage pre-filter block").click();
     await shoot("preset-dialog");
+    // A sheet: its actions stay on screen however long the form is.
+    await expect(
+      page.getByRole("button", { name: "Add set" }),
+    ).toBeInViewport();
     await page.getByRole("button", { name: "Add set" }).click();
-    await expect(page.getByText("Added 3 consumables.")).toBeVisible();
+    await expect(page.getByText("Added 3 cartridges.")).toBeVisible();
   });
 
   for (const [name, path] of [
@@ -93,6 +97,35 @@ test("every signed-in page fits a phone screen", async ({ page }, testInfo) => {
       await shoot(name);
     });
   }
+
+  await test.step("every control on a page is big enough to tap", async () => {
+    for (const path of ["/", "/consumables", "/settings"]) {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      const tooSmall = await page
+        // Not checkboxes: the whole label around one is the target.
+        .locator(
+          "header a, header button, main button, main input:not([type=checkbox])",
+        )
+        .evaluateAll((controls) =>
+          controls
+            .filter((control) => {
+              const box = control.getBoundingClientRect();
+              return box.width > 0 && box.height > 0 && box.height < 44;
+            })
+            .map(
+              (control) =>
+                control.textContent || control.outerHTML.slice(0, 80),
+            ),
+        );
+      expect(tooSmall, `on ${path}`).toEqual([]);
+    }
+  });
+
+  await test.step("signing out lives in Settings on a phone", async () => {
+    await page.goto("/settings");
+    await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
+  });
 
   await test.step("the longer Ukrainian labels still fit", async () => {
     await page

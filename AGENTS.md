@@ -44,6 +44,21 @@ Systems and consumables are private per user and always will be. Every query fil
 Anything touching a `systemId` from input must call `assertOwnsSystem` first.
 `src/server/trpc/routers/ownership.test.ts` covers this — extend it with every new procedure.
 
+## Spares
+
+A cartridge with no `systemId` is a spare: it is in its box, no schedule is running, and nothing
+about it is due. So it has no due date or "Mark replaced" in the row, it is in no Dashboard
+count, and the digest never mentions it. Its `lastChangedOn` still exists, because the column is
+`NOT NULL`, but nothing reads it as a schedule. `consumables.attach` takes a required
+`installedOn` and logs it, which is where the schedule starts. The same date as before means a
+cartridge going back on a system unchanged, and writes nothing to the log.
+
+## Dates that have not happened
+
+`zPastDate` in `~/server/trpc/init` is for anything that has already happened. It refuses only
+what is still in the future in UTC+14, because the server must not guess the viewer's calendar.
+The forms set `max` to the viewer's own today, and that is the check people actually meet.
+
 ## Replacement log
 
 `consumables.lastChangedOn` is a denormalization of `MAX(changed_on)` in
@@ -144,8 +159,40 @@ real `Request` without importing the database singleton. Adding a provider is on
 implementing `MailTransport` and one arm in `create-transport`.
 
 Never filter recipients on `user.emailVerified` — nothing in this app ever sets it true.
-The one recipient that _is_ filtered is the seeded demo account (`DEMO_EMAIL` in
-`~/lib/demo`), in `loadNotifiable` itself, so it is never a candidate nor a claim.
+Three things _are_ filtered, all in `loadNotifiable` itself so that none is ever a candidate
+nor a claim: the seeded demo account (`DEMO_EMAIL` in `~/lib/demo`), spares, and anyone with a
+`digest_opt_outs` row. That is a table rather than a `user_settings` column because a settings
+row needs a `locale`, and writing one to record an opt-out would put down a language nobody
+chose. Nothing is claimed while someone is opted out, so turning the digest back on sends one
+notice for whatever is still due.
+
+The email links to `/settings`, behind sign-in. There is no one-click unsubscribe: a plain link
+would be followed by mail scanners, so doing it properly needs a signed token and a confirm
+step.
+
+## Account
+
+Name, password and deletion go through better-auth's own endpoints, which verify the password.
+`routers/account.ts` holds what belongs to this app: the digest choice and the data export.
+
+The demo account's password is published, so `~/server/demo-guard` refuses `/change-password`,
+`/update-user` and `/delete-user` for it. It is a plugin rather than part of `hooks.before`, which
+belongs to the invite gate, and it only sees real requests, so `scripts/seed.ts` is unaffected.
+Password-reset mail for it is dropped silently in `sendPasswordResetEmail`, so the response to the
+request stays the same as for any other address. `sendResetPassword` never throws for the same
+reason.
+
+## Phone sizes
+
+Controls are 44px below `sm`, and desktop keeps its density. That lives in the `max-sm:` variants
+in `components/ui/*`, so a new control gets it for free; `e2e/mobile.spec.ts` measures it. Pass
+`sheet` to `DialogContent` for anything with a form: it fills the screen below `sm` and
+`DialogFooter` sticks to the bottom. The form inside needs `flex min-h-full flex-col`.
+
+## Terminology
+
+Everything a person reads says **cartridge**, in both languages. "Consumable" is the name in code,
+the schema and URLs only. A cartridge with no system is a **spare**.
 
 ## Invites
 
@@ -208,12 +255,15 @@ the README already says the URL is the only thing that changes between environme
 `describeTarget` in `~/server/db/target.ts` is the one place that decides, and it also strips
 credentials out of the URL before anything prints or writes it.
 
-`deleteUserEverywhere` deletes each user-scoped table **explicitly**, children first, rather
+`deleteUserEverywhere` is also what Settings runs: `user.deleteUser.beforeDelete` calls it, so
+there is one way to erase an account whichever door it goes through. It deletes each
+user-scoped table **explicitly**, children first, rather
 than leaning on the `ON DELETE cascade` every one of them declares (which is what
 `scripts/seed.ts` does). SQLite only enforces foreign keys when `PRAGMA foreign_keys=ON` —
 a per-connection setting this code does not own — and a cascade reports nothing about what it
 took, while the CLI has to show a footprint before it asks. `verification` is left alone on
-purpose: no `user_id`, and nothing in this app writes to it.
+purpose: it has no `user_id`, and the only rows this app puts there are password-reset tokens,
+which expire within the hour.
 
 The backup is a SQL dump rather than a file copy because there is no portable way to get a
 binary one: `@libsql/client` cannot copy a Turso database, and `turso`/`sqlite3` are not

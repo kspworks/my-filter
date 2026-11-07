@@ -18,6 +18,10 @@ export const KNOWN_CODES = [
   "PASSWORD_TOO_LONG",
   // Raised by the invite gate in `~/server/invites/sign-up-gate`.
   "INVITE_REQUIRED",
+  "INVALID_PASSWORD",
+  "INVALID_TOKEN",
+  // Raised by `~/server/demo-guard`.
+  "DEMO_ACCOUNT",
 ] as const;
 
 type KnownCode = (typeof KNOWN_CODES)[number];
@@ -32,7 +36,7 @@ export function useAuthErrorMessage() {
   return useCallback(
     (
       error: { code?: string; message?: string },
-      fallback: "signInFailed" | "signUpFailed",
+      fallback: "signInFailed" | "signUpFailed" | "saveFailed",
     ) => {
       if (isKnownCode(error.code)) return t(error.code);
       return t(fallback);

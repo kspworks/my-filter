@@ -29,6 +29,13 @@
       "when": 1789905809233,
       "tag": "0003_consumable_product_url",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1794083183450,
+      "tag": "0004_digest_opt_outs",
+      "breakpoints": true
     }
   ]
 }

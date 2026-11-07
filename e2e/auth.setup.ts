@@ -11,7 +11,7 @@ const STORAGE = "e2e/.auth/user.json";
 setup("register and stay signed in", async ({ page }) => {
   await page.goto("/register");
 
-  await page.getByLabel("Username").fill("Tester");
+  await page.getByLabel("Name").fill("Tester");
   await page.getByLabel("Email").fill("tester@example.com");
   await page.getByLabel("Password").fill("correct-horse-battery");
   await page.getByRole("button", { name: "Create account" }).click();

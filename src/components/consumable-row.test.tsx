@@ -6,6 +6,7 @@ import {
   type TestApp,
   userEvent,
   waitFor,
+  within,
 } from "~/test-utils/render";
 
 /**
@@ -33,7 +34,7 @@ afterEach(() => {
 
 async function aRow({
   lastChangedOn = "2026-01-10",
-  withSystem = false,
+  withSystem = true,
   showSystem = false,
 } = {}) {
   const system = withSystem
@@ -185,7 +186,13 @@ describe("in Ukrainian", () => {
   afterEach(() => uk.close());
 
   async function aUkrainianRow(intervalValue: number) {
+    const system = await uk.caller.systems.create({
+      manufacturer: "Aquafilter",
+      model: "RO-6",
+      installedOn: "2026-01-10",
+    });
     await uk.caller.consumables.create({
+      systemId: system.id,
       type: "post_carbon",
       name: "Пост-вугільний",
       intervalValue,
@@ -218,5 +225,88 @@ describe("in Ukrainian", () => {
     await aUkrainianRow(6);
 
     expect(await screen.findByText(/^Кожні 6 місяців ·/)).toBeInTheDocument();
+  });
+});
+
+describe("emphasis", () => {
+  it("keeps the replace action's name when nothing is due yet", async () => {
+    await aRow({ lastChangedOn: "2026-09-01" });
+
+    expect(
+      await screen.findByRole("button", { name: "Mark replaced" }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe("a spare", () => {
+  it("shows no due date and offers installing rather than replacing", async () => {
+    await app.caller.systems.create({
+      manufacturer: "Aquafilter",
+      model: "RO-6",
+      installedOn: "2026-01-10",
+    });
+    const systems = await app.caller.systems.list();
+    const consumable = await app.caller.consumables.create({
+      type: "sediment",
+      name: "Boxed",
+      intervalValue: 6,
+      intervalUnit: "months",
+      lastChangedOn: "2025-01-10",
+    });
+    const [item] = await app.caller.consumables.list();
+    if (!item) throw new Error("no row");
+
+    app.render(
+      <ConsumableRow consumable={item} today={TODAY} systems={systems} />,
+    );
+
+    expect(await screen.findByText("Spare, on the shelf")).toBeInTheDocument();
+    expect(
+      screen.getByText("Every 6 months once installed"),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/overdue/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Mark replaced" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Install" })).toBeInTheDocument();
+    expect(consumable.systemId).toBeNull();
+  });
+
+  it("starts its schedule on the day it is installed", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const system = await app.caller.systems.create({
+      manufacturer: "Aquafilter",
+      model: "RO-6",
+      installedOn: "2026-01-10",
+    });
+    await app.caller.consumables.create({
+      type: "sediment",
+      name: "Boxed",
+      intervalValue: 6,
+      intervalUnit: "months",
+      lastChangedOn: "2025-01-10",
+    });
+    const [item] = await app.caller.consumables.list();
+    if (!item) throw new Error("no row");
+
+    app.render(
+      <ConsumableRow
+        consumable={item}
+        today={TODAY}
+        systems={await app.caller.systems.list()}
+      />,
+    );
+
+    await user.click(await screen.findByRole("button", { name: "Install" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByLabelText("Installed on")).toHaveValue(TODAY);
+    await user.click(within(dialog).getByRole("button", { name: "Install" }));
+
+    await screen.findByText("Installed.");
+    const [installed] = await app.caller.consumables.list();
+    expect(installed).toMatchObject({
+      systemId: system.id,
+      lastChangedOn: TODAY,
+    });
   });
 });

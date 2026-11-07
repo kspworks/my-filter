@@ -53,7 +53,7 @@ async function seedFounderInvite(): Promise<string> {
 
 async function register(page: Page, link: string, name: string) {
   await page.goto(link);
-  await page.getByLabel("Username").fill(name);
+  await page.getByLabel("Name").fill(name);
   await page.getByLabel("Email").fill(`${name.toLowerCase()}@example.com`);
   await page.getByLabel("Password").fill(PASSWORD);
   await page.getByRole("button", { name: "Create account" }).click();

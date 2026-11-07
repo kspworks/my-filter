@@ -37,10 +37,12 @@ describe("empty", () => {
     app.render(<ConsumablesView />);
 
     expect(
-      await screen.findByText("Nothing attached to a system yet."),
+      await screen.findByText("No cartridges installed yet."),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Nothing on the shelf. Detached items show up here."),
+      screen.getByText(
+        "No spares on the shelf. Detached cartridges show up here.",
+      ),
     ).toBeInTheDocument();
   });
 });
@@ -58,8 +60,8 @@ describe("split by attachment", () => {
 
     app.render(<ConsumablesView />);
 
-    expect(await screen.findByText("Attached (2)")).toBeInTheDocument();
-    expect(screen.getByText("Unassigned (1)")).toBeInTheDocument();
+    expect(await screen.findByText("Installed (2)")).toBeInTheDocument();
+    expect(screen.getByText("Spares (1)")).toBeInTheDocument();
     expect(screen.getByText("On the shelf")).toBeInTheDocument();
   });
 
@@ -90,7 +92,7 @@ describe("when the data cannot be loaded", () => {
       "Couldn’t load your data",
     );
     expect(
-      screen.queryByText("Nothing attached to a system yet."),
+      screen.queryByText("No cartridges installed yet."),
     ).not.toBeInTheDocument();
   });
 });

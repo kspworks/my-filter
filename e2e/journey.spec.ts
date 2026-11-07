@@ -37,7 +37,7 @@ test("sets a system up, fills it from a preset and records a replacement", async
       .locator("div[data-slot='card']")
       .filter({ hasText: `${MANUFACTURER} RO-6` })
       .first();
-    await expect(group).toContainText("0 items");
+    await expect(group).toContainText("0 cartridges");
     await expect(group).toContainText("No cartridges tracked yet");
   });
 
@@ -52,8 +52,8 @@ test("sets a system up, fills it from a preset and records a replacement", async
     await page.getByText("3-stage pre-filter block").click();
     await page.getByRole("button", { name: "Add set" }).click();
 
-    await expect(page.getByText("Added 3 consumables.")).toBeVisible();
-    await expect(page.getByText("Consumables (3)")).toBeVisible();
+    await expect(page.getByText("Added 3 cartridges.")).toBeVisible();
+    await expect(page.getByText("Cartridges (3)")).toBeVisible();
     // Named from the preset at creation time, in the user's language.
     await expect(page.getByText("Sediment PP 5 micron")).toBeVisible();
   });
@@ -65,7 +65,7 @@ test("sets a system up, fills it from a preset and records a replacement", async
       .locator("div[data-slot='card']")
       .filter({ hasText: `${MANUFACTURER} RO-6` })
       .first();
-    await expect(group).toContainText("3 items");
+    await expect(group).toContainText("3 cartridges");
     await expect(group).toContainText("Sediment PP 5 micron");
   });
 

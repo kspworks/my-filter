@@ -1,3 +1,4 @@
+import { cleanup } from "@testing-library/react";
 import {
   afterEach,
   beforeEach,
@@ -42,13 +43,34 @@ afterEach(() => {
 const user = () => userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
 
 describe("creating", () => {
-  it("defaults to a six-month sediment cartridge changed today", async () => {
+  it("starts from the interval the presets recommend for the type", async () => {
     app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);
 
-    expect(screen.getByLabelText("Interval value")).toHaveValue(6);
-    expect(screen.getByLabelText("Installed / last changed")).toHaveValue(
-      TODAY,
+    expect(screen.getByLabelText("Interval value")).toHaveValue(3);
+  });
+
+  it("asks when it was installed only if it goes on a system", async () => {
+    const system = await app.caller.systems.create({
+      manufacturer: "Aquafilter",
+      model: "RO-6",
+      installedOn: "2026-01-10",
+    });
+    app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);
+    expect(
+      screen.queryByLabelText("Installed / last changed"),
+    ).not.toBeInTheDocument();
+    cleanup();
+
+    app.render(
+      <ConsumableFormDialog
+        open
+        onOpenChange={onOpenChange}
+        defaultSystemId={system.id}
+      />,
     );
+    const date = screen.getByLabelText("Installed / last changed");
+    expect(date).toHaveValue(TODAY);
+    expect(date).toHaveAttribute("max", TODAY);
   });
 
   it("writes an unassigned cartridge with its installation logged", async () => {
@@ -56,16 +78,16 @@ describe("creating", () => {
     app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);
 
     await actor.type(screen.getByLabelText("Name"), "Sediment PP");
-    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+    await actor.click(screen.getByRole("button", { name: "Add cartridge" }));
 
-    expect(await screen.findByText("Consumable added.")).toBeInTheDocument();
+    expect(await screen.findByText("Cartridge added.")).toBeInTheDocument();
     await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
 
     const [created] = await app.caller.consumables.list();
     expect(created).toMatchObject({
       name: "Sediment PP",
       type: "sediment",
-      intervalValue: 6,
+      intervalValue: 3,
       intervalUnit: "months",
       systemId: null,
       lastChangedOn: TODAY,
@@ -81,14 +103,14 @@ describe("creating", () => {
 
     await actor.type(screen.getByLabelText("Name"), "Sediment PP");
     const release = app.holdMutations();
-    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+    await actor.click(screen.getByRole("button", { name: "Add cartridge" }));
 
-    const submit = screen.getByRole("button", { name: "Add consumable" });
+    const submit = screen.getByRole("button", { name: "Add cartridge" });
     await waitFor(() => expect(submit).toHaveAttribute("aria-busy", "true"));
     expect(submit).toBeDisabled();
 
     release();
-    expect(await screen.findByText("Consumable added.")).toBeInTheDocument();
+    expect(await screen.findByText("Cartridge added.")).toBeInTheDocument();
     expect(await app.caller.consumables.list()).toHaveLength(1);
   });
 
@@ -109,9 +131,9 @@ describe("creating", () => {
     );
 
     await actor.type(screen.getByLabelText("Name"), "Membrane");
-    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+    await actor.click(screen.getByRole("button", { name: "Add cartridge" }));
 
-    await screen.findByText("Consumable added.");
+    await screen.findByText("Cartridge added.");
     const [created] = await app.caller.consumables.list();
     expect(created?.systemId).toBe(system.id);
   });
@@ -123,7 +145,7 @@ describe("creating", () => {
     await actor.type(screen.getByLabelText("Name"), "Sediment PP");
     await actor.clear(screen.getByLabelText("Interval value"));
     await actor.type(screen.getByLabelText("Interval value"), "9999");
-    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+    await actor.click(screen.getByRole("button", { name: "Add cartridge" }));
 
     // `max={600}` on the input matches the router's `.max(600)`, so the browser
     // stops the submit and the round trip never happens.
@@ -140,9 +162,9 @@ describe("creating", () => {
       screen.getByLabelText("Where to order"),
       "https://shop.example.com/sediment-pp",
     );
-    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+    await actor.click(screen.getByRole("button", { name: "Add cartridge" }));
 
-    await screen.findByText("Consumable added.");
+    await screen.findByText("Cartridge added.");
     const [created] = await app.caller.consumables.list();
     expect(created?.productUrl).toBe("https://shop.example.com/sediment-pp");
   });
@@ -153,7 +175,7 @@ describe("creating", () => {
 
     // `required` is satisfied by spaces, but the router trims before `.min(1)`.
     await actor.type(screen.getByLabelText("Name"), "   ");
-    await actor.click(screen.getByRole("button", { name: "Add consumable" }));
+    await actor.click(screen.getByRole("button", { name: "Add cartridge" }));
 
     // `useErrorToast` recognises the flattened Zod error and shows the form
     // message rather than a raw server string.
@@ -214,7 +236,7 @@ describe("editing", () => {
     await actor.type(screen.getByLabelText("Name"), "Membrane 50 GPD");
     await actor.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(await screen.findByText("Consumable updated.")).toBeInTheDocument();
+    expect(await screen.findByText("Cartridge updated.")).toBeInTheDocument();
     const [updated] = await app.caller.consumables.list();
     expect(updated).toMatchObject({
       name: "Membrane 50 GPD",
@@ -247,7 +269,7 @@ describe("editing", () => {
     );
     await actor.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(await screen.findByText("Consumable updated.")).toBeInTheDocument();
+    expect(await screen.findByText("Cartridge updated.")).toBeInTheDocument();
     const [updated] = await app.caller.consumables.list();
     expect(updated?.productUrl).toBe("https://shop.example.com/membrane");
   });

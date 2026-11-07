@@ -31,6 +31,7 @@ import {
   type IntervalUnit,
 } from "~/lib/consumables";
 import { useLabels } from "~/lib/labels";
+import { defaultInterval } from "~/lib/presets";
 import { useTRPC } from "~/lib/trpc/client";
 import { useErrorToast } from "~/lib/trpc/use-error-toast";
 import { useRefreshData } from "~/lib/trpc/use-refresh";
@@ -77,12 +78,16 @@ export function ConsumableFormDialog({
     consumable?.type ?? "sediment",
   );
   const [name, setName] = useState(consumable?.name ?? "");
+  const suggested = defaultInterval(consumable?.type ?? "sediment");
   const [intervalValue, setIntervalValue] = useState(
-    String(consumable?.intervalValue ?? 6),
+    String(consumable?.intervalValue ?? suggested?.intervalValue ?? 6),
   );
   const [intervalUnit, setIntervalUnit] = useState<IntervalUnit>(
-    consumable?.intervalUnit ?? "months",
+    consumable?.intervalUnit ?? suggested?.intervalUnit ?? "months",
   );
+  // Once somebody has typed a number it is theirs, and changing the type must
+  // not silently overwrite it. An edit starts out that way.
+  const [intervalTouched, setIntervalTouched] = useState(Boolean(consumable));
   const [lastChangedOn, setLastChangedOn] = useState(
     consumable?.lastChangedOn ?? today,
   );
@@ -113,6 +118,16 @@ export function ConsumableFormDialog({
   );
 
   const pending = createMutation.isPending || updateMutation.isPending;
+  const isSpare = systemId === UNASSIGNED;
+
+  function changeType(next: ConsumableType) {
+    setType(next);
+    const interval = defaultInterval(next);
+    if (interval && !intervalTouched) {
+      setIntervalValue(String(interval.intervalValue));
+      setIntervalUnit(interval.intervalUnit);
+    }
+  }
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -131,15 +146,17 @@ export function ConsumableFormDialog({
       createMutation.mutate({
         ...shared,
         systemId: systemId === UNASSIGNED ? null : systemId,
-        lastChangedOn,
+        // A spare's date is only the day it was added: `attach` sets the real
+        // one, so there is nothing to ask for here.
+        lastChangedOn: isSpare ? today : lastChangedOn,
       });
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form onSubmit={handleSubmit}>
+      <DialogContent sheet>
+        <form className="flex min-h-full flex-col" onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>
               {isEdit ? t("form.editTitle") : t("form.addTitle")}
@@ -147,7 +164,7 @@ export function ConsumableFormDialog({
             <DialogDescription>{t("form.description")}</DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid flex-1 content-start gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="name">{t("form.name")}</Label>
               <Input
@@ -164,7 +181,7 @@ export function ConsumableFormDialog({
               <Label htmlFor="type">{t("form.type")}</Label>
               <Select
                 value={type}
-                onValueChange={(value) => setType(value as ConsumableType)}
+                onValueChange={(value) => changeType(value as ConsumableType)}
               >
                 <SelectTrigger id="type" className="w-full">
                   <SelectValue />
@@ -192,13 +209,17 @@ export function ConsumableFormDialog({
                   required
                   className="w-24"
                   value={intervalValue}
-                  onChange={(event) => setIntervalValue(event.target.value)}
+                  onChange={(event) => {
+                    setIntervalTouched(true);
+                    setIntervalValue(event.target.value);
+                  }}
                 />
                 <Select
                   value={intervalUnit}
-                  onValueChange={(value) =>
-                    setIntervalUnit(value as IntervalUnit)
-                  }
+                  onValueChange={(value) => {
+                    setIntervalTouched(true);
+                    setIntervalUnit(value as IntervalUnit);
+                  }}
                 >
                   <SelectTrigger
                     aria-label={t("form.intervalUnit")}
@@ -220,19 +241,6 @@ export function ConsumableFormDialog({
             {isEdit ? null : (
               <>
                 <div className="grid gap-2">
-                  <Label htmlFor="lastChangedOn">
-                    {t("form.lastChangedOn")}
-                  </Label>
-                  <Input
-                    id="lastChangedOn"
-                    type="date"
-                    required
-                    value={lastChangedOn}
-                    onChange={(event) => setLastChangedOn(event.target.value)}
-                  />
-                </div>
-
-                <div className="grid gap-2">
                   <Label htmlFor="systemId">{t("form.system")}</Label>
                   <Select value={systemId} onValueChange={setSystemId}>
                     <SelectTrigger id="systemId" className="w-full">
@@ -250,6 +258,22 @@ export function ConsumableFormDialog({
                     </SelectContent>
                   </Select>
                 </div>
+
+                {isSpare ? null : (
+                  <div className="grid gap-2">
+                    <Label htmlFor="lastChangedOn">
+                      {t("form.lastChangedOn")}
+                    </Label>
+                    <Input
+                      id="lastChangedOn"
+                      type="date"
+                      required
+                      max={today}
+                      value={lastChangedOn}
+                      onChange={(event) => setLastChangedOn(event.target.value)}
+                    />
+                  </div>
+                )}
               </>
             )}
 

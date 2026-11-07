@@ -1,6 +1,7 @@
 import { convertSetCookieToCookie } from "better-auth/test";
 import { migrate } from "drizzle-orm/libsql/migrator";
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { DEMO_EMAIL } from "~/lib/demo";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import { isCuid } from "~/server/db/id";
@@ -33,6 +34,9 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   // One process-wide database, so clear it rather than rebuilding it.
+  await db.delete(schema.consumableReplacements);
+  await db.delete(schema.consumables);
+  await db.delete(schema.systems);
   await db.delete(schema.session);
   await db.delete(schema.account);
   await db.delete(schema.verification);
@@ -231,5 +235,152 @@ describe("recording the language at sign-in", () => {
 
     expect(await storedLocale()).toBe("uk");
     expect(await db.select().from(schema.userSettings)).toHaveLength(1);
+  });
+});
+
+/** Through `auth.handler`, because the demo guard only applies to real requests. */
+async function post(
+  path: string,
+  body: Record<string, unknown>,
+  cookie?: string,
+) {
+  return auth.handler(
+    new Request(`http://localhost:3000/api/auth${path}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        origin: "http://localhost:3000",
+        ...(cookie ? { cookie } : {}),
+      },
+      body: JSON.stringify(body),
+    }),
+  );
+}
+
+async function signedInAs(overrides: Partial<typeof CREDENTIALS> = {}) {
+  const { headers } = await signUp(overrides);
+  return (
+    convertSetCookieToCookie(new Headers(headers)).get("cookie") ??
+    headers.get("set-cookie")?.split(";")[0] ??
+    ""
+  );
+}
+
+describe("account deletion", () => {
+  it("erases the user's own data along with the account", async () => {
+    const cookie = await signedInAs();
+    const [user] = await db.select().from(schema.user);
+    await db.insert(schema.systems).values({
+      userId: user?.id ?? "",
+      manufacturer: "Aquafilter",
+      model: "RO-6",
+      installedOn: "2026-01-10",
+    });
+
+    const response = await post(
+      "/delete-user",
+      { password: CREDENTIALS.password },
+      cookie,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await db.select().from(schema.user)).toEqual([]);
+    expect(await db.select().from(schema.systems)).toEqual([]);
+    expect(await db.select().from(schema.account)).toEqual([]);
+    expect(await db.select().from(schema.session)).toEqual([]);
+  });
+
+  it("refuses the wrong password and keeps everything", async () => {
+    const cookie = await signedInAs();
+
+    const response = await post(
+      "/delete-user",
+      { password: "not-the-password" },
+      cookie,
+    );
+
+    expect(response.status).toBe(400);
+    expect(await db.select().from(schema.user)).toHaveLength(1);
+  });
+});
+
+describe("the demo account", () => {
+  it.each([
+    ["/change-password", { currentPassword: "x", newPassword: "yyyyyyyy" }],
+    ["/update-user", { name: "Mallory" }],
+    ["/delete-user", { password: CREDENTIALS.password }],
+  ])("cannot be changed through %s", async (path, body) => {
+    const cookie = await signedInAs({ email: DEMO_EMAIL });
+
+    const response = await post(path, body, cookie);
+
+    expect(response.status).toBe(403);
+    expect(await response.json()).toMatchObject({ code: "DEMO_ACCOUNT" });
+    expect(await db.select().from(schema.user)).toMatchObject([
+      { name: CREDENTIALS.name },
+    ]);
+  });
+
+  it("leaves everybody else alone", async () => {
+    const cookie = await signedInAs();
+
+    const response = await post("/update-user", { name: "Renamed" }, cookie);
+
+    expect(response.status).toBe(200);
+    expect(await db.select().from(schema.user)).toMatchObject([
+      { name: "Renamed" },
+    ]);
+  });
+});
+
+describe("password reset", () => {
+  it("answers the same for an address with no account", async () => {
+    await signUp();
+
+    const known = await post("/request-password-reset", {
+      email: CREDENTIALS.email,
+      redirectTo: "/reset-password",
+    });
+    const unknown = await post("/request-password-reset", {
+      email: "nobody@example.com",
+      redirectTo: "/reset-password",
+    });
+
+    expect(known.status).toBe(200);
+    expect(unknown.status).toBe(200);
+    expect(await known.json()).toEqual(await unknown.json());
+  });
+
+  it("changes the password and signs out every session", async () => {
+    await signUp();
+    await post("/request-password-reset", {
+      email: CREDENTIALS.email,
+      redirectTo: "/reset-password",
+    });
+    const [stored] = await db.select().from(schema.verification);
+    const token = stored?.identifier.replace("reset-password:", "") ?? "";
+
+    const response = await post("/reset-password", {
+      newPassword: "a-brand-new-password",
+      token,
+    });
+
+    expect(response.status).toBe(200);
+    expect(await db.select().from(schema.session)).toEqual([]);
+    const signIn = await post("/sign-in/email", {
+      email: CREDENTIALS.email,
+      password: "a-brand-new-password",
+    });
+    expect(signIn.status).toBe(200);
+  });
+
+  it("refuses a token it never issued", async () => {
+    const response = await post("/reset-password", {
+      newPassword: "a-brand-new-password",
+      token: "made-up",
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ code: "INVALID_TOKEN" });
   });
 });

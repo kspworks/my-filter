@@ -6,9 +6,10 @@
   "nav": {
     "dashboard": "Dashboard",
     "systems": "Systems",
-    "consumables": "Consumables",
+    "consumables": "Cartridges",
     "signOut": "Sign out",
-    "invites": "Invites"
+    "invites": "Invites",
+    "settings": "Settings"
   },
   "settings": {
     "theme": {
@@ -32,8 +33,8 @@
     "close": "Close",
     "cannotBeUndone": "This cannot be undone.",
     "notes": "Notes",
-    "itemCount": "{count, plural, one {# item} other {# items}}",
-    "consumableCount": "{count, plural, one {# consumable} other {# consumables}}",
+    "itemCount": "{count, plural, one {# cartridge} other {# cartridges}}",
+    "consumableCount": "{count, plural, one {# cartridge} other {# cartridges}}",
     "loadError": {
       "title": "Couldn’t load your data",
       "body": "Your cartridges are still saved. Check your connection and try again.",
@@ -76,11 +77,13 @@
   "dashboard": {
     "title": "Dashboard",
     "subtitle": "What needs replacing, most urgent first.",
-    "unassigned": "Unassigned",
+    "unassigned": "Spares",
     "groupEmpty": "No cartridges tracked yet. Open this system to add a standard set.",
     "emptyTitle": "Nothing tracked yet",
-    "emptyBody": "Add a water filter system, then apply a preset cartridge set or add consumables one by one.",
-    "emptyAction": "Add your first system"
+    "emptyBody": "Add a water filter system, then apply a preset cartridge set or add cartridges one by one.",
+    "emptyAction": "Add your first system",
+    "needsAttention": "Needs attention",
+    "showAll": "Show all"
   },
   "systems": {
     "title": "Systems",
@@ -93,10 +96,10 @@
     "backToSystems": "Back to systems",
     "deleteLabel": "Delete system",
     "addStandardSet": "Add standard set",
-    "consumablesHeading": "Consumables ({count})",
+    "consumablesHeading": "Cartridges ({count})",
     "noCartridges": "No cartridges tracked for this system yet. “Add standard set” fills in a typical osmosis stack in one step.",
     "deleteTitle": "Delete «{name}»?",
-    "deleteBody": "{count, plural, one {Its # consumable will be kept and moved to Unassigned, along with its history.} other {Its # consumables will be kept and moved to Unassigned, along with their history.}}",
+    "deleteBody": "{count, plural, one {Its # cartridge will be kept and moved to Spares, along with its history.} other {Its # cartridges will be kept and moved to Spares, along with their history.}}",
     "form": {
       "addTitle": "Add system",
       "editTitle": "Edit system",
@@ -111,17 +114,17 @@
     "toast": {
       "added": "System added.",
       "updated": "System updated.",
-      "deleted": "System deleted. Its consumables are now unassigned."
+      "deleted": "System deleted. Its cartridges are now spares."
     }
   },
   "consumables": {
-    "title": "Consumables",
-    "subtitle": "Every cartridge you own, attached or on the shelf.",
-    "add": "Add consumable",
-    "attachedHeading": "Attached ({count})",
-    "unassignedHeading": "Unassigned ({count})",
-    "noneAttached": "Nothing attached to a system yet.",
-    "noneUnassigned": "Nothing on the shelf. Detached items show up here.",
+    "title": "Cartridges",
+    "subtitle": "Every cartridge you own, installed or on the shelf.",
+    "add": "Add cartridge",
+    "attachedHeading": "Installed ({count})",
+    "unassignedHeading": "Spares ({count})",
+    "noneAttached": "No cartridges installed yet.",
+    "noneUnassigned": "No spares on the shelf. Detached cartridges show up here.",
     "summary": "Every {interval} · last changed {date}",
     "summaryWithSystem": "Every {interval} · last changed {date} · {system}",
     "markReplaced": "Mark replaced",
@@ -135,8 +138,8 @@
     "deleteTitle": "Delete «{name}»?",
     "deleteBody": "Its replacement history will be deleted too. This cannot be undone.",
     "form": {
-      "addTitle": "Add consumable",
-      "editTitle": "Edit consumable",
+      "addTitle": "Add cartridge",
+      "editTitle": "Edit cartridge",
       "description": "The service interval drives the next due date. Change it any time — the schedule recalculates from the last replacement.",
       "name": "Name",
       "namePlaceholder": "Sediment PP 5 micron",
@@ -146,20 +149,25 @@
       "intervalUnit": "Interval unit",
       "lastChangedOn": "Installed / last changed",
       "system": "System",
-      "unassignedOption": "Unassigned (spare)",
+      "unassignedOption": "None (keep as a spare)",
       "productUrl": "Where to order",
       "productUrlPlaceholder": "https://shop.example.com/cartridge"
     },
     "toast": {
-      "added": "Consumable added.",
-      "updated": "Consumable updated.",
-      "deleted": "Consumable deleted.",
-      "attached": "Attached.",
-      "detached": "Detached. The item is now unassigned.",
+      "added": "Cartridge added.",
+      "updated": "Cartridge updated.",
+      "deleted": "Cartridge deleted.",
+      "attached": "Installed.",
+      "detached": "Detached. The cartridge is now a spare.",
       "replaced": "«{name}» replaced on {date}.",
       "reverted": "Reverted to the previous replacement date.",
       "undo": "Undo"
-    }
+    },
+    "spare": "Spare, on the shelf",
+    "install": "Install",
+    "attachTitle": "Install on a system",
+    "attachDate": "Installed on",
+    "summarySpare": "Every {interval} once installed"
   },
   "historyDialog": {
     "title": "Service history",
@@ -203,7 +211,7 @@
     "installedOn": "Installed / last changed",
     "apply": "Add set",
     "itemSummary": "{name} — every {interval}",
-    "added": "{count, plural, one {Added # consumable.} other {Added # consumables.}}",
+    "added": "{count, plural, one {Added # cartridge.} other {Added # cartridges.}}",
     "sets": {
       "ro_5_stage": {
         "name": "Classic 5-stage RO",
@@ -225,7 +233,11 @@
       "ro_membrane_50gpd": "RO membrane 50 GPD",
       "post_carbon_inline": "Inline post carbon",
       "mineralizer": "Mineralizer"
-    }
+    },
+    "dateHint": "If you’re not sure, keep today and the schedule starts now.",
+    "nothingToAdd": "Everything in this set is already tracked.",
+    "itemTracked": "{item} (already tracked)",
+    "addedSkipped": "{count, plural, one {Added # cartridge.} other {Added # cartridges.}} {skipped, plural, one {# was already tracked.} other {# were already tracked.}}"
   },
   "auth": {
     "signIn": "Sign in",
@@ -234,7 +246,7 @@
     "createAccount": "Create account",
     "creatingAccount": "Creating account…",
     "createAccountDescription": "Start tracking your filter replacements.",
-    "username": "Username",
+    "username": "Name",
     "email": "Email",
     "password": "Password",
     "passwordHint": "{count, plural, one {At least # character.} other {At least # characters.}}",
@@ -250,7 +262,11 @@
       "INVALID_EMAIL": "That email address is not valid.",
       "PASSWORD_TOO_SHORT": "That password is too short.",
       "PASSWORD_TOO_LONG": "That password is too long.",
-      "INVITE_REQUIRED": "This invite link is no longer valid."
+      "INVITE_REQUIRED": "This invite link is no longer valid.",
+      "saveFailed": "Could not save the change.",
+      "INVALID_PASSWORD": "That password is not correct.",
+      "INVALID_TOKEN": "This reset link is invalid or has expired.",
+      "DEMO_ACCOUNT": "The demo account cannot be changed."
     },
     "invitedBy": "«{name}» invited you to My Filter.",
     "inviteRequired": {
@@ -259,7 +275,20 @@
       "used": "This invite link has already been used. Ask the person who sent it for a new one.",
       "revoked": "This invite link was revoked. Ask the person who sent it for a new one.",
       "expired": "This invite link has expired. Ask the person who sent it for a new one."
-    }
+    },
+    "forgotLink": "Forgot password?",
+    "forgotTitle": "Reset your password",
+    "forgotDescription": "Enter your email and we’ll send you a link.",
+    "forgotSubmit": "Send reset link",
+    "forgotSent": "If «{email}» has an account, a reset link is on its way. It works for one hour.",
+    "backToSignIn": "Back to sign in",
+    "resetTitle": "Choose a new password",
+    "resetDescription": "You’ll be signed out everywhere else.",
+    "newPassword": "New password",
+    "resetSubmit": "Save new password",
+    "resetDone": "Password changed. Sign in with the new one.",
+    "resetInvalid": "This reset link is invalid or has expired.",
+    "resetRequestNew": "Request a new link"
   },
   "email": {
     "digest": {
@@ -275,21 +304,31 @@
       "item": "«{name}» — {due}, scheduled for {date}",
       "itemWithSystem": "«{name}» in «{system}» — {due}, scheduled for {date}",
       "openApp": "Open My Filter",
-      "footer": "You are getting this because you track filter cartridges in My Filter."
+      "footer": "You are getting this because you track filter cartridges in My Filter.",
+      "manage": "Turn these emails off in Settings."
+    },
+    "passwordReset": {
+      "subject": "Reset your My Filter password",
+      "intro": "Someone asked to reset the password for your My Filter account. This link works for one hour.",
+      "action": "Choose a new password",
+      "footer": "If this wasn’t you, ignore this email and your password stays the same."
     }
   },
   "pageTitles": {
     "dashboard": "My Filter",
     "systems": "Systems · My Filter",
     "systemDetail": "System · My Filter",
-    "consumables": "Consumables · My Filter",
+    "consumables": "Cartridges · My Filter",
     "signIn": "Sign in · My Filter",
     "register": "Create account · My Filter",
-    "invites": "Invites · My Filter"
+    "invites": "Invites · My Filter",
+    "settings": "Settings · My Filter",
+    "forgotPassword": "Forgot password · My Filter",
+    "resetPassword": "New password · My Filter"
   },
   "errors": {
     "systemNotFound": "System not found",
-    "consumableNotFound": "Consumable not found",
+    "consumableNotFound": "Cartridge not found",
     "unknownPreset": "Unknown preset",
     "installEntryProtected": "The original installation entry cannot be removed",
     "generic": "Something went wrong. Please try again.",
@@ -299,6 +338,44 @@
     "inviteNotFound": "Invite not found",
     "demoCannotInvite": "The demo account cannot invite people.",
     "inviteLimit": "{count, plural, one {You can have at most # open invite link.} other {You can have at most # open invite links.}}",
-    "replacementNotFound": "History entry not found"
+    "replacementNotFound": "History entry not found",
+    "demoCannotChange": "The demo account cannot be changed."
+  },
+  "account": {
+    "title": "Settings",
+    "subtitle": "Your account, email reminders and data.",
+    "demoNotice": "This is the shared demo account, so these settings are read-only.",
+    "profile": {
+      "title": "Profile",
+      "name": "Name",
+      "email": "Email",
+      "saved": "Name updated."
+    },
+    "digest": {
+      "title": "Email reminders",
+      "label": "Email me when cartridges are due",
+      "help": "A warning 14 days ahead and a notice on the day, at most once a day.",
+      "turnedOn": "Email reminders turned on.",
+      "turnedOff": "Email reminders turned off."
+    },
+    "password": {
+      "title": "Password",
+      "description": "Changing it signs you out on your other devices.",
+      "current": "Current password",
+      "next": "New password",
+      "submit": "Change password",
+      "saved": "Password changed."
+    },
+    "data": {
+      "title": "Your data",
+      "exportHelp": "Download your systems, cartridges and service history as a JSON file.",
+      "export": "Export data",
+      "deleteHelp": "Deleting your account removes everything for good.",
+      "delete": "Delete account",
+      "deleteTitle": "Delete your account?",
+      "deleteBody": "Your systems, cartridges and service history will be deleted. This cannot be undone.",
+      "deletePassword": "Enter your password to confirm",
+      "deleteConfirm": "Delete account"
+    }
   }
 }
