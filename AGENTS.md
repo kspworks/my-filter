@@ -208,6 +208,7 @@ flag travels as `ctx.inviteOnly`, which `callerFor(…, { inviteOnly })` and
 
 **The claim is the mechanism**, the same shape as the digest's sent-log.
 `src/server/invites/sign-up-gate.ts` hooks `/sign-up/email`:
+
 - `before` claims the link with one conditional `UPDATE … RETURNING`, so of two racing
   sign-ups exactly one wins. It throws `INVITE_REQUIRED` otherwise.
 - `after` runs even when the endpoint threw. It records the new account, or releases the claim
