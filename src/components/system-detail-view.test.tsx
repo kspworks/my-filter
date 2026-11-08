@@ -7,6 +7,7 @@ import {
   type TestApp,
   userEvent,
   waitFor,
+  within,
 } from "~/test-utils/render";
 import { routerMock } from "~/test-utils/stubs/next-navigation";
 
@@ -149,5 +150,22 @@ describe("when the data cannot be loaded", () => {
       "Couldn’t load your data",
     );
     expect(screen.queryByText("System not found")).not.toBeInTheDocument();
+  });
+});
+
+describe("retrying after a failed load", () => {
+  it("shows the system once the data comes back", async () => {
+    const actor = user();
+    const system = await aSystem();
+    const restore = app.failQueries();
+
+    app.render(<SystemDetailView systemId={system.id} />);
+    const alert = await screen.findByRole("alert");
+    restore();
+    await actor.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Aquafilter RO-6" }),
+    ).toBeInTheDocument();
   });
 });

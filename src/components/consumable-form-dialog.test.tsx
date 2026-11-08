@@ -97,6 +97,17 @@ describe("creating", () => {
     ).toHaveLength(1);
   });
 
+  it("closes without writing anything when cancelled", async () => {
+    const actor = user();
+    app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);
+
+    await actor.type(screen.getByLabelText("Name"), "Sediment PP");
+    await actor.click(screen.getByRole("button", { name: "Cancel" }));
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+    expect(await app.caller.consumables.list()).toEqual([]);
+  });
+
   it("cannot be submitted twice while the write is running", async () => {
     const actor = user();
     app.render(<ConsumableFormDialog open onOpenChange={onOpenChange} />);

@@ -32,10 +32,10 @@ export default defineConfig({
       // `consumable-row.tsx` and `language-switcher.tsx` — all of it covered
       // by the Playwright suite instead.
       thresholds: {
-        statements: 89,
+        statements: 91,
         branches: 87,
-        functions: 79,
-        lines: 89,
+        functions: 85,
+        lines: 92,
       },
     },
     projects: [

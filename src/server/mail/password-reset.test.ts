@@ -1,6 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createAppTranslator } from "~/i18n/translator";
-import { renderPasswordReset } from "~/server/mail/password-reset";
+import { DEMO_EMAIL } from "~/lib/demo";
+import {
+  renderPasswordReset,
+  sendPasswordResetEmail,
+} from "~/server/mail/password-reset";
+import { saveUserLocale } from "~/server/settings/user-settings";
+import { createUser, makeTestDb, type TestDb } from "~/test-utils/db";
+
+const transport = vi.hoisted(() => ({
+  name: "log" as const,
+  send: vi.fn(),
+  close: vi.fn(),
+}));
+vi.mock("~/server/mail", () => ({
+  createMailTransport: async () => transport,
+}));
 
 const URL = "https://example.com/reset?a=1&b=2";
 
@@ -27,5 +42,51 @@ describe("renderPasswordReset", () => {
     );
 
     expect(mail.subject).toContain("Скидання пароля");
+  });
+});
+
+describe("sendPasswordResetEmail", () => {
+  let db: TestDb;
+  let close: () => void;
+
+  beforeEach(async () => {
+    ({ db, close } = await makeTestDb());
+    transport.send.mockReset();
+    transport.close.mockReset();
+  });
+
+  afterEach(() => close());
+
+  it("writes in the language on the account and closes the transport", async () => {
+    const id = await createUser(db, "olena");
+    await saveUserLocale(db, id, "uk");
+
+    await sendPasswordResetEmail(db, { id, email: "olena@example.com" }, URL);
+
+    expect(transport.send).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "olena@example.com",
+        subject: expect.stringContaining("Скидання пароля"),
+      }),
+    );
+    expect(transport.close).toHaveBeenCalled();
+  });
+
+  it("closes the transport even when sending fails", async () => {
+    const id = await createUser(db, "alice");
+    transport.send.mockRejectedValue(new Error("SMTP down"));
+
+    await expect(
+      sendPasswordResetEmail(db, { id, email: "alice@example.com" }, URL),
+    ).rejects.toThrow("SMTP down");
+    expect(transport.close).toHaveBeenCalled();
+  });
+
+  it("sends nothing for the demo account", async () => {
+    const id = await createUser(db, "demo", { email: DEMO_EMAIL });
+
+    await sendPasswordResetEmail(db, { id, email: DEMO_EMAIL }, URL);
+
+    expect(transport.send).not.toHaveBeenCalled();
   });
 });

@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConsumablesView } from "~/components/consumables-view";
-import { screen, setupApp, type TestApp } from "~/test-utils/render";
+import {
+  screen,
+  setupApp,
+  type TestApp,
+  userEvent,
+  within,
+} from "~/test-utils/render";
 
 const TODAY = "2026-09-14";
 
@@ -94,5 +100,22 @@ describe("when the data cannot be loaded", () => {
     expect(
       screen.queryByText("No cartridges installed yet."),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("retrying after a failed load", () => {
+  it("shows the page once the data comes back", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const restore = app.failQueries();
+
+    app.render(<ConsumablesView />);
+    const alert = await screen.findByRole("alert");
+    restore();
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    expect(
+      await screen.findByText("No cartridges installed yet."),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

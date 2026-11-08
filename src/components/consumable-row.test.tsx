@@ -272,6 +272,41 @@ describe("a spare", () => {
     expect(consumable.systemId).toBeNull();
   });
 
+  it("stays a spare when installing is cancelled", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    await app.caller.systems.create({
+      manufacturer: "Aquafilter",
+      model: "RO-6",
+      installedOn: "2026-01-10",
+    });
+    await app.caller.consumables.create({
+      type: "sediment",
+      name: "Boxed",
+      intervalValue: 6,
+      intervalUnit: "months",
+      lastChangedOn: "2025-01-10",
+    });
+    const [item] = await app.caller.consumables.list();
+    if (!item) throw new Error("no row");
+
+    app.render(
+      <ConsumableRow
+        consumable={item}
+        today={TODAY}
+        systems={await app.caller.systems.list()}
+      />,
+    );
+    await user.click(await screen.findByRole("button", { name: "Install" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    const [still] = await app.caller.consumables.list();
+    expect(still?.systemId).toBeNull();
+  });
+
   it("starts its schedule on the day it is installed", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const system = await app.caller.systems.create({

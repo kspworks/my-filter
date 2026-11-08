@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemsView } from "~/components/systems-view";
-import { screen, setupApp, type TestApp } from "~/test-utils/render";
+import {
+  screen,
+  setupApp,
+  type TestApp,
+  userEvent,
+  within,
+} from "~/test-utils/render";
 
 let app: TestApp;
 
@@ -69,5 +75,20 @@ describe("when the data cannot be loaded", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "Couldn’t load your data",
     );
+  });
+});
+
+describe("retrying after a failed load", () => {
+  it("shows the page once the data comes back", async () => {
+    const user = userEvent.setup();
+    const restore = app.failQueries();
+
+    app.render(<SystemsView />);
+    const alert = await screen.findByRole("alert");
+    restore();
+    await user.click(within(alert).getByRole("button", { name: "Try again" }));
+
+    expect(await screen.findByText("No systems yet")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
