@@ -37,7 +37,7 @@
     "consumableCount": "{count, plural, one {# cartridge} other {# cartridges}}",
     "loadError": {
       "title": "Couldn’t load your data",
-      "body": "Your cartridges are still saved. Check your connection and try again.",
+      "body": "Your cartridges are safe. Check your connection and try again.",
       "retry": "Try again"
     }
   },
@@ -64,7 +64,7 @@
     "ok": "On schedule"
   },
   "inviteStatus": {
-    "pending": "Waiting",
+    "pending": "Pending",
     "used": "Used",
     "revoked": "Revoked",
     "expired": "Expired"
@@ -87,17 +87,17 @@
   },
   "systems": {
     "title": "Systems",
-    "subtitle": "Your water filter units and the cartridges attached to them.",
+    "subtitle": "Your water filter units and the cartridges installed in them.",
     "add": "Add system",
     "emptyTitle": "No systems yet",
-    "emptyBody": "Add the osmosis unit under your sink to start tracking it.",
+    "emptyBody": "Add the reverse osmosis unit under your sink to start tracking it.",
     "installedOn": "Installed {date}",
     "notFound": "System not found",
     "backToSystems": "Back to systems",
     "deleteLabel": "Delete system",
     "addStandardSet": "Add standard set",
     "consumablesHeading": "Cartridges ({count})",
-    "noCartridges": "No cartridges tracked for this system yet. “Add standard set” fills in a typical osmosis stack in one step.",
+    "noCartridges": "No cartridges tracked for this system yet. “Add standard set” adds a typical reverse osmosis set in one step.",
     "deleteTitle": "Delete «{name}»?",
     "deleteBody": "{count, plural, one {Its # cartridge will be kept and moved to Spares, along with its history.} other {Its # cartridges will be kept and moved to Spares, along with their history.}}",
     "form": {
@@ -128,19 +128,19 @@
     "summary": "Every {interval} · last changed {date}",
     "summaryWithSystem": "Every {interval} · last changed {date} · {system}",
     "markReplaced": "Mark replaced",
-    "replaceOnAnotherDate": "Replace on another date",
+    "replaceOnAnotherDate": "Choose another replacement date",
     "replacedOn": "Replaced on",
     "moreActions": "More actions",
     "orderReplacement": "Order replacement",
     "history": "History",
-    "attachment": "Attachment",
+    "attachment": "Installation",
     "detach": "Detach",
     "deleteTitle": "Delete «{name}»?",
     "deleteBody": "Its replacement history will be deleted too. This cannot be undone.",
     "form": {
       "addTitle": "Add cartridge",
       "editTitle": "Edit cartridge",
-      "description": "The service interval drives the next due date. Change it any time — the schedule recalculates from the last replacement.",
+      "description": "The replacement interval sets the next due date. Change it any time — the schedule is recalculated from the last replacement.",
       "name": "Name",
       "namePlaceholder": "Sediment PP 5 micron",
       "type": "Type",
@@ -174,7 +174,7 @@
     "installed": "Installed",
     "mostRecent": "Most recent",
     "replaced": "Replaced",
-    "correctionHint": "Marked one by mistake? Delete that entry and the schedule recalculates.",
+    "correctionHint": "Marked one by mistake? Delete that entry and the schedule will be recalculated.",
     "deleteEntry": "Delete the entry from {date}",
     "deleteTitle": "Delete the entry from {date}?",
     "deleteBody": "The next due date will be recalculated from the remaining entries. This cannot be undone.",
@@ -201,13 +201,13 @@
       "created": "Invite link created and copied.",
       "createdNotCopied": "Invite link created. Copy it and send it to the person you are inviting.",
       "copied": "Link copied.",
-      "copyFailed": "Could not copy the link. Select it and copy it by hand.",
+      "copyFailed": "Could not copy the link. Select it and copy it manually.",
       "revoked": "Invite link revoked."
     }
   },
   "presets": {
     "dialogTitle": "Add a standard cartridge set",
-    "dialogDescription": "A starting point for common osmosis units. Everything it creates is editable afterwards.",
+    "dialogDescription": "A starting point for common reverse osmosis units. Everything it adds can be edited afterwards.",
     "installedOn": "Installed / last changed",
     "apply": "Add set",
     "itemSummary": "{name} — every {interval}",
@@ -215,7 +215,7 @@
     "sets": {
       "ro_5_stage": {
         "name": "Classic 5-stage RO",
-        "description": "Sediment, two carbons, membrane and a post carbon polisher."
+        "description": "Sediment, two carbon filters, a membrane and a post carbon polisher."
       },
       "ro_6_stage_mineralizer": {
         "name": "6-stage RO with mineralizer",
@@ -234,7 +234,7 @@
       "post_carbon_inline": "Inline post carbon",
       "mineralizer": "Mineralizer"
     },
-    "dateHint": "If you’re not sure, keep today and the schedule starts now.",
+    "dateHint": "Not sure? Keep today’s date and the schedule starts from today.",
     "nothingToAdd": "Everything in this set is already tracked.",
     "itemTracked": "{item} (already tracked)",
     "addedSkipped": "{count, plural, one {Added # cartridge.} other {Added # cartridges.}} {skipped, plural, one {# was already tracked.} other {# were already tracked.}}"
@@ -280,7 +280,7 @@
     "forgotTitle": "Reset your password",
     "forgotDescription": "Enter your email and we’ll send you a link.",
     "forgotSubmit": "Send reset link",
-    "forgotSent": "If «{email}» has an account, a reset link is on its way. It works for one hour.",
+    "forgotSent": "If «{email}» has an account, a reset link is on its way. It is valid for one hour.",
     "backToSignIn": "Back to sign in",
     "resetTitle": "Choose a new password",
     "resetDescription": "You’ll be signed out everywhere else.",
@@ -300,16 +300,16 @@
         "due": "Replace now",
         "warning": "Coming up"
       },
-      "intro": "Today’s check of your water filters.",
+      "intro": "Here’s what your water filters need today.",
       "item": "«{name}» — {due}, scheduled for {date}",
       "itemWithSystem": "«{name}» in «{system}» — {due}, scheduled for {date}",
       "openApp": "Open My Filter",
-      "footer": "You are getting this because you track filter cartridges in My Filter.",
+      "footer": "You’re receiving this email because you track filter cartridges in My Filter.",
       "manage": "Turn these emails off in Settings."
     },
     "passwordReset": {
       "subject": "Reset your My Filter password",
-      "intro": "Someone asked to reset the password for your My Filter account. This link works for one hour.",
+      "intro": "Someone asked to reset the password for your My Filter account. This link is valid for one hour.",
       "action": "Choose a new password",
       "footer": "If this wasn’t you, ignore this email and your password stays the same."
     }
@@ -323,7 +323,7 @@
     "register": "Create account · My Filter",
     "invites": "Invites · My Filter",
     "settings": "Settings · My Filter",
-    "forgotPassword": "Forgot password · My Filter",
+    "forgotPassword": "Reset password · My Filter",
     "resetPassword": "New password · My Filter"
   },
   "errors": {
@@ -337,7 +337,7 @@
     "invitesUnavailable": "Invites are not available.",
     "inviteNotFound": "Invite not found",
     "demoCannotInvite": "The demo account cannot invite people.",
-    "inviteLimit": "{count, plural, one {You can have at most # open invite link.} other {You can have at most # open invite links.}}",
+    "inviteLimit": "{count, plural, one {You can have at most # active invite link.} other {You can have at most # active invite links.}}",
     "replacementNotFound": "History entry not found",
     "demoCannotChange": "The demo account cannot be changed."
   },

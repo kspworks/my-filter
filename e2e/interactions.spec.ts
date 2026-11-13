@@ -61,7 +61,7 @@ test("back-dates a replacement through the popover", async ({ page }) => {
   await expect(row).toBeVisible();
 
   await page
-    .getByRole("button", { name: "Replace on another date" })
+    .getByRole("button", { name: "Choose another replacement date" })
     .first()
     .click();
   await page.getByLabel("Replaced on").fill("2026-03-15");

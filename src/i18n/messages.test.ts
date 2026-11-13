@@ -155,6 +155,18 @@ describe("Ukrainian plural rules", () => {
     );
   });
 
+  it("agrees the determiner for a spare too", async () => {
+    const t = await translator("uk");
+    const spare = (count: number) =>
+      t("consumables.summarySpare", {
+        count,
+        interval: t("interval.months", { count }),
+      });
+
+    expect(spare(1)).toBe("Кожен 1 місяць після встановлення");
+    expect(spare(6)).toBe("Кожні 6 місяців після встановлення");
+  });
+
   it("agrees the determiner in the preset list too", async () => {
     const t = await translator("uk");
     const item = (count: number) =>

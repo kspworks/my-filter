@@ -46,7 +46,7 @@ describe("creating a link", () => {
     expect(screen.getByRole("textbox", { name: "Invite link" })).toHaveValue(
       link,
     );
-    expect(screen.getByText("Waiting")).toBeInTheDocument();
+    expect(screen.getByText("Pending")).toBeInTheDocument();
     expect(
       screen.getByText("You can create 4 more links."),
     ).toBeInTheDocument();
